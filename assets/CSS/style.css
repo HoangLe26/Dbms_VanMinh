@@ -1,0 +1,103 @@
+body { background-color: #fdfae2; overflow-x: hidden; } /* Thêm overflow-x để tránh bị cuộn ngang khi animation chạy */
+        .text-vm-green { color: #0b8a4f !important; }
+        .bg-vm-green { background-color: #0b8a4f !important; }
+        
+        .btn-vm-green { background-color: #0b8a4f; color: white; font-weight: bold; border: none; }
+        .btn-vm-green:hover { background-color: #086b3d; color: white; }
+        
+        /* Chỉnh form tìm kiếm */
+        .search-area { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
+        .form-select, .form-control { border-radius: 4px; margin-bottom: 15px; border: 1px solid #ddd; }
+        #ngayDi { cursor: pointer; background-color: white; }
+
+        /* --- CSS CHO PHẦN GIỚI THIỆU CÔNG TY MỚI --- */
+        .intro-text-col { padding: 40px 20px; background-color: #fdfae2; }
+        .text-vm-green-dark { color: #0b8a4f; font-weight: 900; font-size: 3.5rem; letter-spacing: -1px;}
+        
+        .intro-box {
+            position: relative;
+            height: 100%;
+            min-height: 450px;
+            background-size: cover;
+            background-position: center;
+            color: white;
+            padding: 40px;
+            display: flex;
+            align-items: flex-end; /* Ép chữ xuống đáy */
+            transition: transform 0.5s ease;
+            overflow: hidden;
+        }
+        .intro-box:hover { transform: scale(1.02); } /* Hiệu ứng phình to nhẹ khi di chuột */
+        
+        /* Lớp phủ đen mờ để chữ màu trắng nổi bật trên nền ảnh */
+        .intro-box::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.1) 60%);
+        }
+        .intro-box-content { position: relative; z-index: 1; }
+
+        /* Icon vòng tròn đỏ phần Cam Kết */
+        .icon-circle {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 80px; height: 80px; border: 2px dashed #e74c3c; border-radius: 50%;
+            color: #e74c3c; font-size: 32px; margin-bottom: 15px;
+        }
+        
+        /* CSS cho Footer */
+        footer a { color: white; text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+        .social-icon { display: inline-flex; align-items: center; justify-content: center; width: 35px; height: 35px; border: 1px solid white; border-radius: 50%; margin-right: 10px; color: white; }
+        
+        /* Nút trôi nổi */
+        .floating-buttons { position: fixed; bottom: 40px; left: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 20px; }
+        .btn-float { position: relative; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; text-decoration: none; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .btn-float:hover { color: white; opacity: 0.9; }
+        .btn-zalo { background-color: #008fe5; }
+        .btn-phone { background-color: #f32b2b; }
+        .btn-float::before { content: ""; position: absolute; width: 100%; height: 100%; border-radius: 50%; z-index: -1; animation: pulse-ring 1.5s infinite; }
+        .btn-zalo::before { background-color: rgba(0, 143, 229, 0.5); }
+        .btn-phone::before { background-color: rgba(243, 43, 43, 0.5); }
+        @keyframes pulse-ring { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.8); opacity: 0; } }
+
+        /* --- CSS CHO MENU TRƯỢT --- */
+        .offcanvas-menu { width: 320px !important; border-right: none; }
+        
+        /* Ô tìm kiếm trong menu */
+        .menu-search-wrapper { position: relative; }
+        .menu-search-input { border-radius: 25px; background-color: #f1f2f6; border: none; padding: 10px 20px; padding-right: 40px; width: 100%; outline: none;}
+        .menu-search-btn { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #333; }
+        
+        /* Chỉnh style cho các mục menu */
+        .menu-item-link { color: #555; font-weight: 600; font-size: 15px; text-decoration: none; display: block; padding: 15px 20px; border-bottom: 1px solid #f1f1f1; transition: 0.2s;}
+        .menu-item-link:hover { color: #0b8a4f; background-color: #fafafa;}
+        .menu-item-link i { font-size: 18px; margin-right: 8px; vertical-align: middle;}
+        
+        /* Chỉnh menu xổ xuống (Accordion) */
+        .accordion-button { color: #555; font-weight: 600; font-size: 15px; padding: 15px 20px; }
+        .accordion-button:focus { box-shadow: none; background-color: transparent; }
+        .accordion-button:not(.collapsed) { background-color: #f8f9fa; color: #0b8a4f; box-shadow: none;}
+        .accordion-body { padding: 0; background-color: #fcfcfc; }
+        .sub-menu-link { display: block; padding: 10px 20px 10px 45px; color: #666; text-decoration: none; font-size: 14px; border-bottom: 1px solid #f1f1f1; }
+        .sub-menu-link:hover { color: #0b8a4f; padding-left: 50px; transition: 0.3s; }
+        /* Đảm bảo Menu dính luôn nằm trên cùng (chỉ dưới Offcanvas) */
+        .sticky-top { z-index: 1020; }
+        /* --- CSS CHO MENU CĂN GIỮA VÀ TỰ ĐỘNG XỔ XUỐNG KHI HOVER --- */
+@media all and (min-width: 992px) {
+    /* Ép menu con hiện ra khi di chuột vào menu cha */
+    .navbar .nav-item.dropdown:hover .dropdown-menu {
+        display: block;
+        margin-top: 0; /* Đẩy menu con bám sát lên trên để chuột không bị trượt ra ngoài */
+        animation: fadeDropdown 0.3s ease; /* Thêm hiệu ứng xuất hiện mượt mà */
+    }
+    
+    /* Đổi màu xanh cho chữ menu cha khi di chuột */
+    .navbar .nav-item.dropdown:hover .nav-link {
+        color: #0b8a4f !important;
+    }
+}
+
+/* Hiệu ứng mờ ảo mượt mà khi menu xổ xuống */
+@keyframes fadeDropdown {
+    0% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+}

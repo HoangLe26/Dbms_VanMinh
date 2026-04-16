@@ -1,0 +1,57 @@
+body { background-color: #f5f5f5; }
+        
+        .text-vm-red { color: #d82d27 !important; }
+        .bg-vm-red { background-color: #d82d27 !important; }
+        .text-vm-green { color: #0b8a4f !important; }
+        .bg-vm-green { background-color: #0b8a4f !important; }
+        
+        .btn-vm-red { background-color: #d82d27; color: white; border: none; font-weight: bold;}
+        .btn-vm-red:hover { background-color: #b8221d; color: white; }
+        
+        .booking-navbar { background-color: white; border-bottom: 1px solid #ddd; }
+        .step-indicator { display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 500;}
+        .step-circle { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; margin-right: 8px;}
+        .step-line { width: 100px; height: 1px; background-color: #ccc; margin: 0 15px; }
+        
+        .bus-card { background: white; border-radius: 8px; border: 1px solid #e0e0e0; transition: box-shadow 0.2s; position: relative; margin-bottom: 1rem; }
+        .bus-card:hover { box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .time-text { color: #0d6efd; font-weight: bold; font-size: 1.1rem; }
+
+        /* Thẻ xe đã Hết vé */
+        .bus-card.sold-out { background-color: #e9ecef; border-bottom: none; opacity: 0.8; }
+        .bus-card.sold-out * { color: #6c757d !important; }
+        .btn-sold-out { background-color: white !important; color: #212529 !important; border: 1px solid #ccc; font-weight: bold; }
+
+        /* CSS SƠ ĐỒ GHẾ */
+        .seat-selection-pane { background-color: white; border: 1px solid #e0e0e0; border-top: none; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; padding: 20px; }
+        .seat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px 15px; margin-top: 20px; }
+        .bus-seat { border-radius: 20px; padding: 8px 0; text-align: center; font-size: 12px; font-weight: 600; transition: all 0.2s; border: none; user-select: none; }
+        
+        .bus-seat.free { background-color: #cce0ff; color: #495057; cursor: pointer; }
+        .bus-seat.free:hover { background-color: #0b8a4f; color: white; }
+        .bus-seat.booked { background-color: #fce4b6; color: #a67c00; cursor: not-allowed; }
+        .bus-seat.sold { background-color: #f8c6c8; color: #a83333; cursor: not-allowed; }
+        .bus-seat.selecting { background-color: #0b8a4f !important; color: white !important; cursor: pointer; }
+
+        .seat-empty { visibility: hidden; }
+        .deck-title { font-weight: bold; text-align: center; margin-bottom: 10px; }
+        .legend-box { width: 24px; height: 14px; border-radius: 3px; display: inline-block; margin-right: 8px; vertical-align: middle;}
+        .bg-free { background-color: #cce0ff; }
+        .bg-booked { background-color: #fce4b6; }
+        .bg-sold { background-color: #f8c6c8; }
+
+        /* Form bên phải */
+        .form-group-custom .input-group-text { background-color: white; border-right: none; color: #d82d27; }
+        .form-group-custom .form-control, .form-group-custom .form-select { border-left: none; }
+        .form-group-custom .form-control:focus, .form-group-custom .form-select:focus { box-shadow: none; border-color: #dee2e6; }
+        .btn-checkout-style { background-color: #f1f1f1; color: #adb5bd; font-weight: bold; border-radius: 20px; border: none; }
+        /*zalo*/
+        .floating-buttons { position: fixed; bottom: 40px; left: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 20px; }
+        .btn-float { position: relative; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; text-decoration: none; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .btn-float:hover { color: white; opacity: 0.9; }
+        .btn-zalo { background-color: #008fe5; }
+        .btn-phone { background-color: #f32b2b; }
+        .btn-float::before { content: ""; position: absolute; width: 100%; height: 100%; border-radius: 50%; z-index: -1; animation: pulse-ring 1.5s infinite; }
+        .btn-zalo::before { background-color: rgba(0, 143, 229, 0.5); }
+        .btn-phone::before { background-color: rgba(243, 43, 43, 0.5); }
+        @keyframes pulse-ring { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.8); opacity: 0; } }
