@@ -58,21 +58,27 @@ def trip_list():
         except ValueError:
             ngay_di_sql = None
 
+    # Bổ sung dòng GROUP_CONCAT vào câu query
+    # Query chuyến xe với filter (Đã bổ sung GROUP_CONCAT)
     sql = """
         SELECT
             t.trip_id, t.dep_time, t.arr_time, t.duration, t.type, t.price, t.license_plate,
             dep_loc.station  AS dep_station, dep_loc.province AS dep_province,
             arr_loc.station  AS arr_station, arr_loc.province AS arr_province,
             b.capacity,
-            (SELECT COUNT(*) FROM Ticket_Seat ts JOIN Ticket tk ON ts.tic_id = tk.tic_id WHERE tk.trip_id = t.trip_id) AS sold_seats
+            (SELECT COUNT(*) FROM Ticket_Seat ts JOIN Ticket tk ON ts.tic_id = tk.tic_id WHERE tk.trip_id = t.trip_id) AS sold_seats,
+            (SELECT GROUP_CONCAT(s.seat_code) FROM Ticket_Seat ts JOIN Ticket tk ON ts.tic_id = tk.tic_id JOIN Seat s ON ts.seat_id = s.seat_id WHERE tk.trip_id = t.trip_id) AS booked_seats_str
         FROM Trip t
         JOIN Location dep_loc ON t.dep_sta_id = dep_loc.loc_id
         JOIN Location arr_loc ON t.arr_sta_id = arr_loc.loc_id
         JOIN Bus b ON t.license_plate = b.license_plate
         WHERE 1=1
     """
-    params = []
+    
+    # DÒNG NÀY RẤT QUAN TRỌNG ĐỂ KHÔNG BỊ LỖI
+    params = [] 
 
+    # Chỉ giữ filter ngày trong SQL
     if ngay_di_sql:
         sql += " AND DATE(t.dep_time) = %s"
         params.append(ngay_di_sql)
@@ -82,12 +88,21 @@ def trip_list():
     cursor.execute(sql, params)
     trips = cursor.fetchall()
 
-    # 2. GỌT SẠCH DATA CHUYẾN XE TRƯỚC KHI SO SÁNH
+    # 2. GỌT SẠCH DATA CHUYẾN XE VÀ XỬ LÝ GHẾ
     for trip in trips:
         trip['free_seats'] = trip['capacity'] - trip['sold_seats']
+        
         # Gọt sạch ký tự thừa ở tỉnh đi và tỉnh đến
         if trip['dep_province']: trip['dep_province'] = trip['dep_province'].strip()
         if trip['arr_province']: trip['arr_province'] = trip['arr_province'].strip()
+        
+        # --- ĐÂY CHÍNH LÀ ĐOẠN BỊ THIẾU ---
+        # Biến chuỗi "A1,A2" từ SQL thành một danh sách ['A1', 'A2'] để HTML đọc được
+        if trip['booked_seats_str']:
+            # split(',') để tách chuỗi, strip() để dọn dẹp ký tự tàng hình nếu có
+            trip['booked_seats'] = [s.strip() for s in trip['booked_seats_str'].split(',')]
+        else:
+            trip['booked_seats'] = []
 
     # 3. LỌC CHÍNH XÁC 100%
     if diem_di:
