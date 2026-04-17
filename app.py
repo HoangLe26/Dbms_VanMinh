@@ -126,6 +126,135 @@ def trip_list():
         total=len(trips)
     )
 
+# ───── Admin Dashboard ─────
+@app.route('/admin')
+def admin_dashboard():
+    db = get_db_connection()
+    cursor = db.cursor(dictionary=True)
+
+    # 1. KPIs
+    cursor.execute("SELECT SUM(total) AS total_revenue FROM Bill")
+    total_revenue = cursor.fetchone()['total_revenue'] or 0
+
+    cursor.execute("SELECT COUNT(*) AS total_customers FROM Customer")
+    total_customers = cursor.fetchone()['total_customers'] or 0
+
+    cursor.execute("SELECT COUNT(*) AS total_tickets FROM Ticket")
+    total_tickets = cursor.fetchone()['total_tickets'] or 0
+
+    cursor.execute("SELECT COUNT(*) AS total_trips FROM Trip")
+    total_trips = cursor.fetchone()['total_trips'] or 0
+
+    kpis = {
+        'revenue': total_revenue,
+        'customers': total_customers,
+        'tickets': total_tickets,
+        'trips': total_trips
+    }
+
+    # 2. Revenue by Payment Method
+    cursor.execute("SELECT method, COUNT(*) as count FROM Bill GROUP BY method")
+    payment_methods = cursor.fetchall()
+
+    # 3. Top 5 Popular Routes
+    cursor.execute("""
+        SELECT dep_loc.province AS dep, arr_loc.province AS arr, COUNT(tk.tic_id) AS ticket_count 
+        FROM Ticket tk 
+        JOIN Trip t ON tk.trip_id = t.trip_id 
+        JOIN Location dep_loc ON t.dep_sta_id = dep_loc.loc_id 
+        JOIN Location arr_loc ON t.arr_sta_id = arr_loc.loc_id 
+        GROUP BY dep_loc.province, arr_loc.province 
+        ORDER BY ticket_count DESC 
+        LIMIT 5
+    """)
+    popular_routes = cursor.fetchall()
+
+    # 4. Top 5 Customers
+    cursor.execute("""
+        SELECT c.name, c.phonenum, SUM(b.total) as total_spent 
+        FROM Bill b 
+        JOIN Customer c ON b.customer_id = c.customer_id 
+        GROUP BY c.customer_id, c.name, c.phonenum 
+        ORDER BY total_spent DESC 
+        LIMIT 5
+    """)
+    top_customers = cursor.fetchall()
+
+    # 5. Revenue Over Time (Daily)
+    cursor.execute("""
+        SELECT DATE(date) as bill_date, SUM(total) as daily_revenue 
+        FROM Bill 
+        GROUP BY DATE(date) 
+        ORDER BY bill_date
+    """)
+    revenue_daily = cursor.fetchall()
+
+    cursor.close()
+    db.close()
+
+    return render_template('admin_dashboard.html', 
+                           kpis=kpis, 
+                           payment_methods=payment_methods,
+                           popular_routes=popular_routes,
+                           top_customers=top_customers,
+                           revenue_daily=revenue_daily)
+
+# ───── Quản lý Khách hàng ─────
+@app.route('/admin/customers')
+def admin_customers():
+    db = get_db_connection()
+    cursor = db.cursor(dictionary=True)
+
+    # Lấy danh sách khách hàng và tổng tiền họ đã chi tiêu
+    cursor.execute("""
+        SELECT c.customer_id, c.name, c.phonenum, c.email, c.customer_type, 
+               COALESCE(SUM(b.total), 0) as total_spent,
+               COUNT(b.bill_id) as total_orders
+        FROM Customer c
+        LEFT JOIN Bill b ON c.customer_id = b.customer_id
+        GROUP BY c.customer_id, c.name, c.phonenum, c.email, c.customer_type
+        ORDER BY total_spent DESC
+    """)
+    customers = cursor.fetchall()
+    
+    # KPIs
+    cursor.execute("SELECT COUNT(*) as total FROM Customer")
+    total_customers = cursor.fetchone()['total'] or 0
+    
+    cursor.execute("SELECT COUNT(*) as vip FROM Customer WHERE customer_type = 'special'")
+    vip_customers = cursor.fetchone()['vip'] or 0
+
+    cursor.close()
+    db.close()
+    
+    return render_template('admin_customers.html', customers=customers, total_customers=total_customers, vip_customers=vip_customers)
+
+# ───── Quản lý Vé & Hóa đơn ─────
+@app.route('/admin/tickets')
+def admin_tickets():
+    db = get_db_connection()
+    cursor = db.cursor(dictionary=True)
+
+    # Lấy danh sách hóa đơn
+    cursor.execute("""
+        SELECT b.bill_id, c.name as customer_name, b.date, b.total, b.method, b.status
+        FROM Bill b
+        LEFT JOIN Customer c ON b.customer_id = c.customer_id
+        ORDER BY b.date DESC
+    """)
+    bills = cursor.fetchall()
+    
+    # KPIs
+    cursor.execute("SELECT COUNT(*) as total_bills, SUM(total) as total_revenue FROM Bill")
+    kpi_data = cursor.fetchone()
+    total_bills = kpi_data['total_bills'] or 0
+    total_revenue = kpi_data['total_revenue'] or 0
+
+    cursor.close()
+    db.close()
+    
+    return render_template('admin_tickets.html', bills=bills, total_bills=total_bills, total_revenue=total_revenue)
+
 # ───── Tra cứu vé ─────
 @app.route('/tra_cuu')
 def tra_cuu():
