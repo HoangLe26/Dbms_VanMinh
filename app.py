@@ -23,24 +23,33 @@ def home():
     db.close()
     return render_template('index.html', provinces=danh_sach_tinh)
 
+
 # ───── Danh sách chuyến xe ─────
 @app.route('/trip_list')
 def trip_list():
     db = get_db_connection()
     cursor = db.cursor(dictionary=True)
 
-    # Lấy tham số lọc từ URL (ví dụ: /trip_list?diem_di=Hà Nội&diem_den=Hà Tĩnh&ngay_di=20/04/2026)
+    # Lấy tham số lọc từ URL
     diem_di  = unicodedata.normalize('NFC', request.args.get('diem_di', '').strip())
     diem_den = unicodedata.normalize('NFC', request.args.get('diem_den', '').strip())
     ngay_di  = request.args.get('ngay_di', '').strip()
 
-    # Lấy danh sách tỉnh cho dropdown
+    # 1. LẤY VÀ GỌT SẠCH DANH SÁCH TỈNH CHO DROPDOWN
     cursor.execute("SELECT DISTINCT province FROM Location ORDER BY province")
     provinces_raw = cursor.fetchall()
-    # Chuẩn hóa Unicode NFC cho tên tỉnh
-    provinces = [{'province': unicodedata.normalize('NFC', p['province'])} for p in provinces_raw]
+    # Thêm .strip() để gọt sạch khoảng trắng/ký tự ẩn từ Database
+    provinces = [{'province': unicodedata.normalize('NFC', p['province']).strip()} for p in provinces_raw]
+    
+    # Loại bỏ các tỉnh bị trùng lặp sau khi đã gọt sạch khoảng trắng
+    seen = set()
+    clean_provinces = []
+    for p in provinces:
+        if p['province'] not in seen and p['province'] != "":
+            seen.add(p['province'])
+            clean_provinces.append(p)
 
-    # Chuyển ngày từ định dạng dd/mm/yyyy → yyyy-mm-dd cho MySQL
+    # Chuyển ngày
     ngay_di_sql = None
     if ngay_di:
         try:
@@ -49,27 +58,13 @@ def trip_list():
         except ValueError:
             ngay_di_sql = None
 
-    # Query chuyến xe với filter
     sql = """
         SELECT
-            t.trip_id,
-            t.dep_time,
-            t.arr_time,
-            t.duration,
-            t.type,
-            t.price,
-            t.license_plate,
-            dep_loc.station  AS dep_station,
-            dep_loc.province AS dep_province,
-            arr_loc.station  AS arr_station,
-            arr_loc.province AS arr_province,
+            t.trip_id, t.dep_time, t.arr_time, t.duration, t.type, t.price, t.license_plate,
+            dep_loc.station  AS dep_station, dep_loc.province AS dep_province,
+            arr_loc.station  AS arr_station, arr_loc.province AS arr_province,
             b.capacity,
-            -- Đếm số ghế đã bán (số Ticket_Seat của chuyến này)
-            (SELECT COUNT(*)
-             FROM Ticket_Seat ts
-             JOIN Ticket tk ON ts.tic_id = tk.tic_id
-             WHERE tk.trip_id = t.trip_id
-            ) AS sold_seats
+            (SELECT COUNT(*) FROM Ticket_Seat ts JOIN Ticket tk ON ts.tic_id = tk.tic_id WHERE tk.trip_id = t.trip_id) AS sold_seats
         FROM Trip t
         JOIN Location dep_loc ON t.dep_sta_id = dep_loc.loc_id
         JOIN Location arr_loc ON t.arr_sta_id = arr_loc.loc_id
@@ -78,7 +73,6 @@ def trip_list():
     """
     params = []
 
-    # Chỉ giữ filter ngày trong SQL (kiểu DATE, không có vấn đề Unicode)
     if ngay_di_sql:
         sql += " AND DATE(t.dep_time) = %s"
         params.append(ngay_di_sql)
@@ -88,19 +82,21 @@ def trip_list():
     cursor.execute(sql, params)
     trips = cursor.fetchall()
 
-    # Tính ghế còn trống cho từng chuyến
+    # 2. GỌT SẠCH DATA CHUYẾN XE TRƯỚC KHI SO SÁNH
     for trip in trips:
         trip['free_seats'] = trip['capacity'] - trip['sold_seats']
+        # Gọt sạch ký tự thừa ở tỉnh đi và tỉnh đến
+        if trip['dep_province']: trip['dep_province'] = trip['dep_province'].strip()
+        if trip['arr_province']: trip['arr_province'] = trip['arr_province'].strip()
 
-    # Lọc theo tỉnh trong Python (tránh lỗi so sánh Unicode NFC/NFD của MySQL)
+    # 3. LỌC CHÍNH XÁC 100%
     if diem_di:
         nfc_di = unicodedata.normalize('NFC', diem_di)
-        trips = [t for t in trips
-                 if unicodedata.normalize('NFC', t['dep_province']) == nfc_di]
+        trips = [t for t in trips if unicodedata.normalize('NFC', t['dep_province']) == nfc_di]
+        
     if diem_den:
         nfc_den = unicodedata.normalize('NFC', diem_den)
-        trips = [t for t in trips
-                 if unicodedata.normalize('NFC', t['arr_province']) == nfc_den]
+        trips = [t for t in trips if unicodedata.normalize('NFC', t['arr_province']) == nfc_den]
 
     cursor.close()
     db.close()
@@ -108,13 +104,12 @@ def trip_list():
     return render_template(
         'trip_list.html',
         trips=trips,
-        provinces=provinces,
+        provinces=clean_provinces, # Truyền danh sách tỉnh siêu sạch ra giao diện
         diem_di=diem_di,
         diem_den=diem_den,
         ngay_di=ngay_di,
         total=len(trips)
     )
-
 
 # ───── Tra cứu vé ─────
 @app.route('/tra_cuu')
