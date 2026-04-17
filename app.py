@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request
 import mysql.connector
+import unicodedata
 
 app = Flask(__name__, static_folder='assets', static_url_path='/assets')
 
@@ -29,13 +30,15 @@ def trip_list():
     cursor = db.cursor(dictionary=True)
 
     # Lấy tham số lọc từ URL (ví dụ: /trip_list?diem_di=Hà Nội&diem_den=Hà Tĩnh&ngay_di=20/04/2026)
-    diem_di  = request.args.get('diem_di', '').strip()
-    diem_den = request.args.get('diem_den', '').strip()
+    diem_di  = unicodedata.normalize('NFC', request.args.get('diem_di', '').strip())
+    diem_den = unicodedata.normalize('NFC', request.args.get('diem_den', '').strip())
     ngay_di  = request.args.get('ngay_di', '').strip()
 
     # Lấy danh sách tỉnh cho dropdown
     cursor.execute("SELECT DISTINCT province FROM Location ORDER BY province")
-    provinces = cursor.fetchall()
+    provinces_raw = cursor.fetchall()
+    # Chuẩn hóa Unicode NFC cho tên tỉnh
+    provinces = [{'province': unicodedata.normalize('NFC', p['province'])} for p in provinces_raw]
 
     # Chuyển ngày từ định dạng dd/mm/yyyy → yyyy-mm-dd cho MySQL
     ngay_di_sql = None
@@ -75,12 +78,7 @@ def trip_list():
     """
     params = []
 
-    if diem_di:
-        sql += " AND dep_loc.province = %s"
-        params.append(diem_di)
-    if diem_den:
-        sql += " AND arr_loc.province = %s"
-        params.append(diem_den)
+    # Chỉ giữ filter ngày trong SQL (kiểu DATE, không có vấn đề Unicode)
     if ngay_di_sql:
         sql += " AND DATE(t.dep_time) = %s"
         params.append(ngay_di_sql)
@@ -93,6 +91,16 @@ def trip_list():
     # Tính ghế còn trống cho từng chuyến
     for trip in trips:
         trip['free_seats'] = trip['capacity'] - trip['sold_seats']
+
+    # Lọc theo tỉnh trong Python (tránh lỗi so sánh Unicode NFC/NFD của MySQL)
+    if diem_di:
+        nfc_di = unicodedata.normalize('NFC', diem_di)
+        trips = [t for t in trips
+                 if unicodedata.normalize('NFC', t['dep_province']) == nfc_di]
+    if diem_den:
+        nfc_den = unicodedata.normalize('NFC', diem_den)
+        trips = [t for t in trips
+                 if unicodedata.normalize('NFC', t['arr_province']) == nfc_den]
 
     cursor.close()
     db.close()

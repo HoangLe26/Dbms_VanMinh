@@ -47,16 +47,16 @@
                 {% endif %}
             </div>
             <form class="d-flex gap-2 flex-wrap" action="/trip_list" method="GET">
-                <select name="diem_di" class="form-select form-select-sm" style="width: 130px;">
+                <select id="selectDiemDi" name="diem_di" class="form-select form-select-sm" style="width: 130px;">
                     <option value="">Điểm đi</option>
                     {% for p in provinces %}
-                    <option value="{{ p.province }}" {% if p.province == diem_di %}selected{% endif %}>{{ p.province }}</option>
+                    <option value="{{ p.province }}">{{ p.province }}</option>
                     {% endfor %}
                 </select>
-                <select name="diem_den" class="form-select form-select-sm" style="width: 130px;">
+                <select id="selectDiemDen" name="diem_den" class="form-select form-select-sm" style="width: 130px;">
                     <option value="">Điểm đến</option>
                     {% for p in provinces %}
-                    <option value="{{ p.province }}" {% if p.province == diem_den %}selected{% endif %}>{{ p.province }}</option>
+                    <option value="{{ p.province }}">{{ p.province }}</option>
                     {% endfor %}
                 </select>
                 <input type="text" name="ngay_di" id="ngayDi" class="form-control form-control-sm bg-white"
@@ -196,9 +196,21 @@
     <script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
     
     <script>
-        flatpickr("#ngayDi", { locale: "vn", dateFormat: "d/m/Y", minDate: "today" });
+        flatpickr("#ngayDi", {
+            locale: "vn",
+            dateFormat: "d/m/Y",
+            minDate: "today",
+            defaultDate: "{{ ngay_di }}" || null,
+            allowInput: true
+        });
 
         document.addEventListener("DOMContentLoaded", function() {
+            // ── Khôi phục giá trị dropdown điểm đi / điểm đến ──
+            const diemDiVal  = "{{ diem_di | e }}";
+            const diemDenVal = "{{ diem_den | e }}";
+            if (diemDiVal)  document.getElementById('selectDiemDi').value  = diemDiVal;
+            if (diemDenVal) document.getElementById('selectDiemDen').value = diemDenVal;
+
             // Lấy tất cả các khung sơ đồ ghế của tất cả các xe
             const panes = document.querySelectorAll('.seat-selection-pane');
 
