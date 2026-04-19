@@ -271,9 +271,62 @@
 
                         const total = selectedSeats.length * ticketPrice;
                         totalPriceElement.innerText = new Intl.NumberFormat('vi-VN').format(total) + ' đ';
+
                     });
                 });
+                checkoutBtn.addEventListener('click', function () {
+                    // Đổi text nút thành Đang xử lý để khách không bấm 2 lần
+                    this.innerText = 'Đang giữ chỗ...';
+                    this.disabled = true;
+
+                    // Lấy ID chuyến xe (Cắt bỏ chữ #seatPane_)
+                    const tripId = pane.id.replace('seatPane_', '');
+
+                    fetch('/api/lock_seats', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            trip_id: tripId,
+                            seats: selectedSeats,
+                            total_price: selectedSeats.length * ticketPrice
+                        })
+                    })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success) {
+                                startCountdown(60, data.bill_id, pane); // Chuyển sang đếm ngược
+                            } else {
+                                alert("Lỗi giữ chỗ: " + data.error);
+                                this.innerText = 'Thanh toán'; // Lỗi thì nhả nút ra lại
+                                this.disabled = false;
+                            }
+                        });
+                });
             });
+            function startCountdown(seconds, billId, pane) {
+                let timeLeft = seconds;
+
+                // Tìm cái chỗ hiển thị nút để biến nó thành đồng hồ
+                const checkoutBtn = pane.querySelector('.btn-checkout-action');
+
+                const timerInterval = setInterval(() => {
+                    timeLeft--;
+
+                    // Hiển thị đếm ngược thẳng lên cái nút Thanh toán luôn cho xịn
+                    checkoutBtn.innerText = `Chờ xác nhận... (${timeLeft}s)`;
+                    checkoutBtn.classList.remove('btn-vm-red');
+                    checkoutBtn.classList.add('btn-warning', 'text-dark');
+
+                    if (timeLeft <= 0) {
+                        clearInterval(timerInterval);
+                        alert("Hết thời gian giữ chỗ! Ghế đã được giải phóng.");
+                        location.reload(); // F5 trang để nhả ghế
+                    }
+                }, 1000);
+
+                // Ở đây bạn có thể hiển thị một cái Popup (Modal) mã QR để khách chuyển khoản
+                // Xác nhận xong thì gọi API confirm_payment
+            }
         });
     </script>
 </body>
