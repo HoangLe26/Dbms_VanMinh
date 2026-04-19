@@ -133,15 +133,14 @@
                 data-type="{{ 'Xe Limousine VIP' if trip.type == 'vip' else 'Xe giường nằm' }} {{ trip.capacity }} chỗ">
                 <div class="row g-4">
                     <div class="col-lg-8 bg-light rounded-3 p-4">
-                        <div class="row">
-                            <div class="col-sm-6 px-4">
-                                <div class="deck-title">Tầng 1</div>
+                        {% if trip.capacity == 21 %}
+                        <div class="row justify-content-center">
+                            <div class="col-sm-8 px-4">
+                                <div class="deck-title">Sơ đồ ghế (Limousine 21 chỗ)</div>
                                 <div class="seat-grid">
-                                    {# Ghế tầng 1: B, D, F #}
-                                    {% for col in ['B','D','F'] %}
-                                    {% for row in range(1,7) %}
+                                    {% for row in range(1,8) %}
+                                    {% for col in ['A','B','C'] %}
                                     {% set seat_name = col ~ row %}
-
                                     {% if seat_name in trip.sold_seats %}
                                     <div class="bus-seat sold">{{ seat_name }}</div>
                                     {% elif seat_name in trip.pending_seats %}
@@ -149,7 +148,31 @@
                                     {% else %}
                                     <div class="bus-seat free">{{ seat_name }}</div>
                                     {% endif %}
-
+                                    {% endfor %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="row">
+                            <div class="col-sm-6 px-4">
+                                <div class="deck-title">Tầng 1</div>
+                                <div class="seat-grid">
+                                    {# Ghế tầng 1: B, D, F (Duyệt theo row để CSS Grid sắp xếp đúng trái sang phải) #}
+                                    {% for row in range(1,8) %}
+                                    {% for col in ['B','D','F'] %}
+                                    {% set seat_name = col ~ row %}
+                                    {% if (seat_name == 'B7' or seat_name == 'D7') %}
+                                        <div class="seat-empty"></div>
+                                    {% else %}
+                                        {% if seat_name in trip.sold_seats %}
+                                        <div class="bus-seat sold">{{ seat_name }}</div>
+                                        {% elif seat_name in trip.pending_seats %}
+                                        <div class="bus-seat booked">{{ seat_name }}</div>
+                                        {% else %}
+                                        <div class="bus-seat free">{{ seat_name }}</div>
+                                        {% endif %}
+                                    {% endif %}
                                     {% endfor %}
                                     {% endfor %}
                                 </div>
@@ -158,23 +181,26 @@
                                 <div class="deck-title">Tầng 2</div>
                                 <div class="seat-grid">
                                     {# Ghế tầng 2: A, C, E #}
+                                    {% for row in range(1,8) %}
                                     {% for col in ['A','C','E'] %}
-                                    {% for row in range(1,7) %}
                                     {% set seat_name = col ~ row %}
-
-                                    {% if seat_name in trip.sold_seats %}
-                                    <div class="bus-seat sold">{{ seat_name }}</div>
-                                    {% elif seat_name in trip.pending_seats %}
-                                    <div class="bus-seat booked">{{ seat_name }}</div>
+                                    {% if (seat_name == 'A7' or seat_name == 'C7') %}
+                                        <div class="seat-empty"></div>
                                     {% else %}
-                                    <div class="bus-seat free">{{ seat_name }}</div>
+                                        {% if seat_name in trip.sold_seats %}
+                                        <div class="bus-seat sold">{{ seat_name }}</div>
+                                        {% elif seat_name in trip.pending_seats %}
+                                        <div class="bus-seat booked">{{ seat_name }}</div>
+                                        {% else %}
+                                        <div class="bus-seat free">{{ seat_name }}</div>
+                                        {% endif %}
                                     {% endif %}
-
                                     {% endfor %}
                                     {% endfor %}
                                 </div>
                             </div>
                         </div>
+                        {% endif %}
                         <div class="d-flex justify-content-center gap-4 mt-4">
                             <div><span class="legend-box bg-free"></span> Trống</div>
                             <div><span class="legend-box bg-booked"></span> Đang giữ chỗ</div>
