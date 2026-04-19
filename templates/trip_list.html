@@ -84,6 +84,9 @@
                             {% if not is_sold_out %}<i class="bi bi-clock text-dark me-1 fs-6"></i>{% endif %}
                             {{ trip.dep_time.strftime('%H:%M') }} - {{ trip.arr_time.strftime('%H:%M') }}
                         </div>
+                        <div class="small mb-1 {{ 'text-muted' if is_sold_out else 'text-dark' }}">
+                            <i class="bi bi-calendar-event me-1"></i> {{ trip.dep_time.strftime('%d/%m/%Y') }}
+                        </div>
                         <small class="{{ 'text-muted' if not is_sold_out }}">Thời gian: {{ (trip.duration // 60) }} giờ
                             {{ (trip.duration % 60) }} phút</small>
                     </div>
