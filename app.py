@@ -58,16 +58,41 @@ def trip_list():
         except ValueError:
             ngay_di_sql = None
 
-    # Bổ sung dòng GROUP_CONCAT vào câu query
-    # Query chuyến xe với filter (Đã bổ sung GROUP_CONCAT)
+    # Câu SQL nâng cấp: Phân loại ghế Đỏ (Đã bán) và ghế Vàng (Đang giữ < 60s)
     sql = """
         SELECT
             t.trip_id, t.dep_time, t.arr_time, t.duration, t.type, t.price, t.license_plate,
             dep_loc.station  AS dep_station, dep_loc.province AS dep_province,
             arr_loc.station  AS arr_station, arr_loc.province AS arr_province,
             b.capacity,
-            (SELECT COUNT(*) FROM Ticket_Seat ts JOIN Ticket tk ON ts.tic_id = tk.tic_id WHERE tk.trip_id = t.trip_id) AS sold_seats,
-            (SELECT GROUP_CONCAT(s.seat_code) FROM Ticket_Seat ts JOIN Ticket tk ON ts.tic_id = tk.tic_id JOIN Seat s ON ts.seat_id = s.seat_id WHERE tk.trip_id = t.trip_id) AS booked_seats_str
+            
+            -- Lấy danh sách mã ghế ĐÃ MUA (Màu đỏ)
+            (SELECT GROUP_CONCAT(s.seat_code) 
+             FROM Ticket_Seat ts 
+             JOIN Ticket tk ON ts.tic_id = tk.tic_id 
+             JOIN Seat s ON ts.seat_id = s.seat_id
+             JOIN Bill bl ON tk.bill_id = bl.bill_id 
+             WHERE tk.trip_id = t.trip_id AND bl.status = 'Đã thanh toán') AS sold_seats_str,
+            
+            -- Lấy danh sách mã ghế ĐANG GIỮ (Màu vàng - Dưới 60s)
+            (SELECT GROUP_CONCAT(s.seat_code) 
+             FROM Ticket_Seat ts 
+             JOIN Ticket tk ON ts.tic_id = tk.tic_id 
+             JOIN Seat s ON ts.seat_id = s.seat_id
+             JOIN Bill bl ON tk.bill_id = bl.bill_id 
+             WHERE tk.trip_id = t.trip_id 
+               AND bl.status = 'Đang chờ' 
+               AND bl.date >= NOW() - INTERVAL 60 SECOND) AS pending_seats_str,
+               
+            -- Đếm tổng số ghế ĐÃ BỊ CHIẾM (gồm cả Đã mua + Đang giữ dưới 60s)
+            (SELECT COUNT(*) 
+             FROM Ticket_Seat ts 
+             JOIN Ticket tk ON ts.tic_id = tk.tic_id 
+             JOIN Bill bl ON tk.bill_id = bl.bill_id 
+             WHERE tk.trip_id = t.trip_id 
+               AND (bl.status = 'Đã thanh toán' OR (bl.status = 'Đang chờ' AND bl.date >= NOW() - INTERVAL 60 SECOND))
+            ) AS occupied_seats_count
+            
         FROM Trip t
         JOIN Location dep_loc ON t.dep_sta_id = dep_loc.loc_id
         JOIN Location arr_loc ON t.arr_sta_id = arr_loc.loc_id
@@ -75,7 +100,6 @@ def trip_list():
         WHERE 1=1
     """
     
-    # DÒNG NÀY RẤT QUAN TRỌNG ĐỂ KHÔNG BỊ LỖI
     params = [] 
 
     # Chỉ giữ filter ngày trong SQL
@@ -90,19 +114,19 @@ def trip_list():
 
     # 2. GỌT SẠCH DATA CHUYẾN XE VÀ XỬ LÝ GHẾ
     for trip in trips:
-        trip['free_seats'] = trip['capacity'] - trip['sold_seats']
+        # Số ghế trống = Tổng ghế - Số ghế đã bị chiếm
+        occupied = trip['occupied_seats_count'] if trip['occupied_seats_count'] else 0
+        trip['free_seats'] = trip['capacity'] - occupied
         
         # Gọt sạch ký tự thừa ở tỉnh đi và tỉnh đến
         if trip['dep_province']: trip['dep_province'] = trip['dep_province'].strip()
         if trip['arr_province']: trip['arr_province'] = trip['arr_province'].strip()
         
-        # --- ĐÂY CHÍNH LÀ ĐOẠN BỊ THIẾU ---
-        # Biến chuỗi "A1,A2" từ SQL thành một danh sách ['A1', 'A2'] để HTML đọc được
-        if trip['booked_seats_str']:
-            # split(',') để tách chuỗi, strip() để dọn dẹp ký tự tàng hình nếu có
-            trip['booked_seats'] = [s.strip() for s in trip['booked_seats_str'].split(',')]
-        else:
-            trip['booked_seats'] = []
+        # Tách danh sách ghế ĐỎ
+        trip['sold_seats'] = [s.strip() for s in trip['sold_seats_str'].split(',')] if trip['sold_seats_str'] else []
+        
+        # Tách danh sách ghế VÀNG
+        trip['pending_seats'] = [s.strip() for s in trip['pending_seats_str'].split(',')] if trip['pending_seats_str'] else []
 
     # 3. LỌC CHÍNH XÁC 100%
     if diem_di:
@@ -119,13 +143,13 @@ def trip_list():
     return render_template(
         'trip_list.html',
         trips=trips,
-        provinces=clean_provinces, # Truyền danh sách tỉnh siêu sạch ra giao diện
+        provinces=clean_provinces,
         diem_di=diem_di,
         diem_den=diem_den,
         ngay_di=ngay_di,
         total=len(trips)
     )
-
+    
 # ───── Admin Dashboard ─────
 @app.route('/admin')
 def admin_dashboard():
