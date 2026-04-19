@@ -1,14 +1,14 @@
 import csv
 import random
 
-# 1. Dựa theo sơ đồ xe giường nằm thực tế ở Việt Nam (như ảnh bạn gửi)
-# Tầng 1 thường là các dãy B, D, F, M...
-# Tầng 2 thường là các dãy A, C, E, S...
-# Ở đây tôi tạo một sơ đồ mẫu khoảng 38 - 40 chỗ.
-tang_1 = [f"{day}{so}" for day in ['B', 'D', 'F'] for so in range(1, 7)] # B1-B6, D1-D6, F1-F6
-tang_2 = [f"{day}{so}" for day in ['A', 'C', 'E'] for so in range(1, 7)] # A1-A6, C1-C6, E1-E6
+# 1. Dựa theo sơ đồ xe giường nằm thực tế và xe Limousine ở Việt Nam
+# Tầng 1: B, D, F
+# Tầng 2: A, C, E
+# Độ dài dãy: Tối đa 7 hàng (để hỗ trợ các dòng xe lên tới 40 chỗ)
+tang_1 = [f"{day}{so}" for day in ['B', 'D', 'F'] for so in range(1, 8)] # B1-B7, D1-D7, F1-F7
+tang_2 = [f"{day}{so}" for day in ['A', 'C', 'E'] for so in range(1, 8)] # A1-A7, C1-C7, E1-E7
 
-# Gộp chung thành danh sách toàn bộ mã ghế
+# Gộp chung thành danh sách toàn bộ mã ghế (Tổng cộng 42 ghế để bao phủ mọi sơ đồ)
 danh_sach_ma_ghe = tang_1 + tang_2
 
 # 2. Tạo và ghi dữ liệu ra file CSV
