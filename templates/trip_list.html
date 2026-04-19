@@ -123,7 +123,11 @@
         {# ── Panel chọn ghế (chỉ hiện nếu còn vé) ── #}
         {% if not is_sold_out %}
         <div class="collapse mt-0" id="{{ pane_id }}">
-            <div class="seat-selection-pane" data-price="{{ trip.price }}">
+            <div class="seat-selection-pane" data-trip-id="{{ trip.trip_id }}" data-price="{{ trip.price }}"
+                data-dep-province="{{ trip.dep_province }}" data-dep-station="{{ trip.dep_station }}"
+                data-arr-province="{{ trip.arr_province }}" data-arr-station="{{ trip.arr_station }}"
+                data-time="{{ trip.dep_time.strftime('%H:%M - %d/%m/%Y') }}"
+                data-type="{{ 'Xe Limousine VIP' if trip.type == 'vip' else 'Xe giường nằm' }} {{ trip.capacity }} chỗ">
                 <div class="row g-4">
                     <div class="col-lg-8 bg-light rounded-3 p-4">
                         <div class="row">
@@ -162,6 +166,7 @@
                         </div>
                         <div class="d-flex justify-content-center gap-4 mt-4">
                             <div><span class="legend-box bg-free"></span> Trống</div>
+                            <div><span class="legend-box bg-booked"></span> Đang giữ chỗ</div>
                             <div><span class="legend-box bg-sold"></span> Bán</div>
                         </div>
                     </div>
@@ -275,12 +280,20 @@
                     });
                 });
                 checkoutBtn.addEventListener('click', function () {
+                    const phoneInputVal = pane.querySelector('input[placeholder="Số điện thoại (*)"]').value;
+                    const nameInputVal = pane.querySelector('input[placeholder="Họ tên (*)"]').value;
+
+                    if (!phoneInputVal || !nameInputVal) {
+                        alert('Vui lòng nhập đầy đủ Số điện thoại và Họ tên trước khi thanh toán!');
+                        return;
+                    }
+
                     // Đổi text nút thành Đang xử lý để khách không bấm 2 lần
                     this.innerText = 'Đang giữ chỗ...';
                     this.disabled = true;
 
-                    // Lấy ID chuyến xe (Cắt bỏ chữ #seatPane_)
-                    const tripId = pane.id.replace('seatPane_', '');
+                    // Lấy ID chuyến xe
+                    const tripId = pane.getAttribute('data-trip-id');
 
                     fetch('/api/lock_seats', {
                         method: 'POST',
@@ -294,12 +307,43 @@
                         .then(res => res.json())
                         .then(data => {
                             if (data.success) {
-                                startCountdown(60, data.bill_id, pane); // Chuyển sang đếm ngược
+                                const phoneInput = pane.querySelector('input[placeholder="Số điện thoại (*)"]').value || '';
+                                const nameInput = pane.querySelector('input[placeholder="Họ tên (*)"]').value || '';
+                                const depProv = pane.getAttribute('data-dep-province') || '';
+                                const depSta = pane.getAttribute('data-dep-station') || '';
+                                const arrProv = pane.getAttribute('data-arr-province') || '';
+                                const arrSta = pane.getAttribute('data-arr-station') || '';
+                                const type = pane.getAttribute('data-type') || '';
+                                const timeInfo = pane.getAttribute('data-time') || '';
+                                const total = selectedSeats.length * ticketPrice;
+
+                                const params = new URLSearchParams({
+                                    bill_id: data.bill_id,
+                                    price: total,
+                                    unit_price: ticketPrice,
+                                    phone: phoneInput,
+                                    name: nameInput,
+                                    seats: selectedSeats.join(','),
+                                    dep_prov: depProv,
+                                    dep_sta: depSta,
+                                    arr_prov: arrProv,
+                                    arr_sta: arrSta,
+                                    type: type,
+                                    time: timeInfo
+                                });
+
+                                // Chuyển hướng sang trang thanh toán
+                                window.location.href = `/payment?` + params.toString();
                             } else {
                                 alert("Lỗi giữ chỗ: " + data.error);
                                 this.innerText = 'Thanh toán'; // Lỗi thì nhả nút ra lại
                                 this.disabled = false;
                             }
+                        })
+                        .catch(err => {
+                            alert("Không thể kết nối đến máy chủ.");
+                            this.innerText = 'Thanh toán';
+                            this.disabled = false;
                         });
                 });
             });

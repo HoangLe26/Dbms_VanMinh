@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thanh toán - Văn Minh</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/assets/css/trip_list_style.css">
+    <style>
+        body {
+            background-color: #fbf8f1;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .payment-card {
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .timer-box {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #dc3545;
+            background: #ffebee;
+            padding: 10px 20px;
+            border-radius: 8px;
+            display: inline-block;
+            letter-spacing: 2px;
+        }
+
+        .btn-complete {
+            background-color: #009933;
+            color: white;
+            border-radius: 25px;
+            padding: 12px 30px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+            border: none;
+        }
+
+        .btn-complete:hover {
+            background-color: #00802b;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 153, 51, 0.3);
+        }
+
+        .qr-placeholder {
+            width: 220px;
+            height: 220px;
+            background-color: #f8f9fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            margin: 0 auto;
+            border: 2px dashed #ccc;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            border-bottom: 1px dashed #eee;
+            padding-bottom: 8px;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .text-vm-red {
+            color: #d11a2a !important;
+        }
+
+        .bg-vm-red {
+            background-color: #d11a2a !important;
+            color: white;
+        }
+    </style>
+</head>
+
+<body class="d-flex flex-column min-vh-100">
+
+    <nav class="navbar navbar-expand-lg booking-navbar py-3 sticky-top shadow-sm" style="background-color: #fccf00;">
+        <div class="container d-flex justify-content-between align-items-center">
+            <a class="navbar-brand" href="/">
+                <img src="/assets/Image/logo_header.png" alt="Logo Văn Minh" height="35">
+            </a>
+            <div class="step-indicator d-none d-md-flex align-items-center">
+                <div class="d-flex align-items-center text-muted">
+                    <div class="step-circle bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-2"
+                        style="width: 24px; height: 24px; font-size: 12px;"><i class="bi bi-check2"></i></div> <span
+                        style="font-size: 14px;">Chọn chỗ</span>
+                </div>
+                <div class="step-line mx-2" style="width: 40px; height: 2px; background-color: #ccc;"></div>
+                <div class="d-flex align-items-center text-vm-red fw-bold">
+                    <div class="step-circle bg-vm-red text-white rounded-circle d-flex align-items-center justify-content-center me-2"
+                        style="width: 24px; height: 24px; font-size: 12px;">2</div> <span style="font-size: 14px;">Thanh
+                        toán</span>
+                </div>
+                <div class="step-line mx-2" style="width: 40px; height: 2px; background-color: #ccc;"></div>
+                <div class="d-flex align-items-center text-muted">
+                    <div class="step-circle bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-2"
+                        style="width: 24px; height: 24px; font-size: 12px;">3</div> <span style="font-size: 14px;">Hoàn
+                        thành</span>
+                </div>
+            </div>
+            <div class="text-muted small">
+                <i class="bi bi-globe"></i> Tiếng Việt
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-5 mb-5 d-flex justify-content-center">
+        <div class="col-12 col-md-10 col-lg-8">
+            <!-- Payment Header -->
+            <div class="text-center mb-4">
+                <h3 class="fw-bold text-vm-red">Thanh toán chuyển khoản</h3>
+                <p class="text-muted small">Vui lòng hoàn tất thanh toán để giữ chỗ.</p>
+            </div>
+
+            <!-- THÔNG TIN VÉ ĐẸP CHUẨN VĂN MINH -->
+            <div class="ticket-card mb-4 bg-white rounded-3 border"
+                style="box-shadow: 0 4px 15px rgba(0,0,0,0.08); overflow: hidden;">
+                <!-- Header -->
+                <div class="ticket-header p-3 d-flex align-items-center"
+                    style="background-color: #2b5082; color: white;">
+                    <img src="/assets/Image/logo_header.png" alt="Logo" height="30" class="me-3 bg-white p-1 rounded">
+                    <div>
+                        <h5 class="mb-0 fw-bold" style="font-size: 1.1rem;">Nhà xe Văn Minh</h5>
+                        <small style="opacity: 0.8; font-weight: normal;">Phiếu xác nhận đặt vé</small>
+                    </div>
+                </div>
+
+                <div class="p-4 px-md-5">
+                    <!-- Details Grid -->
+                    <div class="row g-4 mb-4">
+                        <div class="col-6">
+                            <small class="text-muted d-block mb-1 text-uppercase" style="font-size: 0.75rem;"><i
+                                    class="bi bi-geo-alt me-1"></i> ĐIỂM ĐI</small>
+                            <div class="fw-bold fs-6">{{ dep_prov }}</div>
+                            <small class="text-muted">{{ dep_sta }}</small>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted d-block mb-1 text-uppercase" style="font-size: 0.75rem;"><i
+                                    class="bi bi-geo-alt-fill me-1"></i> ĐIỂM ĐẾN</small>
+                            <div class="fw-bold fs-6">{{ arr_prov }}</div>
+                            <small class="text-muted">{{ arr_sta }}</small>
+                        </div>
+
+                        <div class="col-6">
+                            <small class="text-muted d-block mb-1 text-uppercase" style="font-size: 0.75rem;"><i
+                                    class="bi bi-clock me-1"></i> GIỜ KHỞI HÀNH</small>
+                            <div class="fw-bold">{{ time }}</div>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted d-block mb-1 text-uppercase" style="font-size: 0.75rem;"><i
+                                    class="bi bi-bus-front me-1"></i> LOẠI XE</small>
+                            <div class="fw-bold">{{ bus_type }}</div>
+                        </div>
+
+                        <div class="col-6">
+                            <small class="text-muted d-block mb-1 text-uppercase" style="font-size: 0.75rem;"><i
+                                    class="bi bi-person me-1"></i> HỌ TÊN</small>
+                            <div class="fw-bold">{{ name }}</div>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted d-block mb-1 text-uppercase" style="font-size: 0.75rem;"><i
+                                    class="bi bi-telephone me-1"></i> ĐIỆN THOẠI</small>
+                            <div class="fw-bold">{{ phone }}</div>
+                        </div>
+                    </div>
+
+                    <hr style="border-top: 1px dashed #ddd; margin: 20px 0;">
+
+                    <!-- Seats and Price -->
+                    <div class="row align-items-center mb-3">
+                        <div class="col-6">
+                            <small class="text-muted d-block text-uppercase mb-2" style="font-size: 0.75rem;">GHẾ ĐÃ
+                                CHỌN</small>
+                            <div>
+                                {% for seat in seat_list %}
+                                <span class="badge me-1 py-2 px-3 rounded-pill"
+                                    style="background-color: #e6f0ff; color: #0d6efd;">{{ seat }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="col-6 text-end">
+                            <span class="badge rounded-pill text-dark px-3 py-2" style="background-color: #ffeb3b;">Chưa
+                                thanh toán</span>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4 align-items-center">
+                        <div class="col-6 text-muted">
+                            {{ seat_list|length }} ghế × {{ unit_price }}
+                        </div>
+                        <div class="col-6 text-end">
+                            <h4 class="fw-bold mb-0" style="color: #d11a2a;">{{ price }}</h4>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ticket-footer p-3 bg-light text-center" style="border-top: 1px solid #eee;">
+                    <small class="text-muted"><i class="bi bi-info-circle me-1"></i> Vui lòng thanh toán số tiền <strong
+                            class="text-vm-red">{{ price }}</strong> để hệ thống xuất vé.</small>
+                </div>
+            </div>
+
+            <div class="card p-4 border-0 shadow-sm rounded-3">
+                <div class="mb-4">
+                    <div class="qr-placeholder mb-4 position-relative">
+                        <i class="bi bi-qr-code-scan" style="font-size: 5rem; color: #adb5bd;"></i>
+                        <div class="position-absolute bottom-0 start-50 translate-middle-x mb-2 text-muted small">Mã QR
+                            (Tượng trưng)</div>
+                    </div>
+
+                    <div class="bg-light p-3 rounded-3">
+                        <div class="info-row">
+                            <span class="text-muted">Ngân hàng</span>
+                            <strong class="text-dark">Vietcombank</strong>
+                        </div>
+                        <div class="info-row">
+                            <span class="text-muted">Số tài khoản</span>
+                            <strong class="text-dark fs-5 text-vm-red">1900 8888 6666</strong>
+                        </div>
+                        <div class="info-row">
+                            <span class="text-muted">Chủ tài khoản</span>
+                            <strong class="text-dark">CONG TY TNHH VAN MINH</strong>
+                        </div>
+                        <div class="info-row">
+                            <span class="text-muted">Số tiền</span>
+                            <strong class="text-vm-red fs-5" id="totalAmount">{{ price }}</strong>
+                        </div>
+                        <div class="info-row">
+                            <span class="text-muted">Nội dung chuyển khoản</span>
+                            <strong class="text-dark bg-warning px-2 py-1 rounded" style="font-family: monospace;"
+                                id="transferContent">VM{{ phone }}</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center mb-4">
+                    <p class="mb-2 fw-bold text-muted">Thời gian giữ chỗ còn lại</p>
+                    <div class="timer-box" id="countdownTimer">01:00</div>
+                </div>
+
+                <button id="btnComplete" class="btn btn-complete w-100 mb-3">
+                    <i class="bi bi-check-circle me-2"></i>Tôi đã hoàn tất thanh toán
+                </button>
+                <div class="text-center">
+                    <a href="/trip_list" class="text-muted small text-decoration-none"><i
+                            class="bi bi-arrow-left me-1"></i>Hủy thanh toán và quay lại</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Lấy bill_id từ địa chỉ URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const billId = urlParams.get('bill_id');
+
+        // Đếm ngược 60s
+        let timeLeft = 60;
+        const timerDisplay = document.getElementById('countdownTimer');
+        const countdown = setInterval(() => {
+            timeLeft--;
+            let m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+            let s = (timeLeft % 60).toString().padStart(2, '0');
+            timerDisplay.innerText = m + ':' + s;
+
+            if (timeLeft <= 0) {
+                clearInterval(countdown);
+                alert('Đã hết thời gian thanh toán. Ghế đã được giải phóng.');
+                window.location.href = '/trip_list';
+            }
+        }, 1000);
+
+        // Nút hoàn tất thanh toán - Gửi lệnh về MySQL để cập nhật trạng thái
+        document.getElementById('btnComplete').addEventListener('click', function () {
+            const btn = this;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang xác nhận...';
+            btn.disabled = true;
+
+            fetch('/api/confirm_payment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bill_id: billId })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        clearInterval(countdown);
+                        alert('Thanh toán thành công! Chuyến xe của bạn đã được chốt.');
+                        window.location.href = '/';
+                    } else {
+                        alert('Lỗi xác nhận: ' + data.error);
+                        btn.innerText = 'Tôi đã hoàn tất thanh toán';
+                        btn.disabled = false;
+                    }
+                })
+                .catch(err => {
+                    alert("Lỗi kết nối máy chủ.");
+                    btn.disabled = false;
+                });
+        });
+    </script>
+</body>
+
+</html>

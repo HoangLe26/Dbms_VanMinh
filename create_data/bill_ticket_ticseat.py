@@ -72,8 +72,34 @@ for i in range(1, so_luong_hoa_don + 1):
     status = 'Đã thanh toán'
     bill_date = "2026-04-18 10:30:00" # Giả lập 1 mốc thời gian mua
     
+
+    if random.random() < 0.8:
+        status = 'Đã thanh toán'
+        bill_date = "2026-04-18 10:30:00" 
+    else:
+        status = 'Đang chờ'
+        # Quan trọng: Lấy giờ hiện tại để logic 60s trong SQL có tác dụng
+        bill_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
     bills_data.append([bill_id, discount, total, method, bill_date, status, cus_id])
+
+# Giả sử bạn muốn tạo 40 bill test trạng thái khác nhau
+for i in range(40):
+    # ... logic tạo ID ...
     
+    # Chia tỉ lệ: 80% đã thanh toán, 20% đang chờ để test màu vàng
+    if random.random() < 0.8:
+        status = 'Đã thanh toán'
+        bill_date = "2026-04-18 10:30:00" 
+    else:
+        status = 'Đang chờ'
+        # Quan trọng: Lấy giờ hiện tại để logic 60s trong SQL có tác dụng
+        bill_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    
+    bills_data.append([bill_id, discount, total, method, bill_date, status, cus_id])
+
+
+
     # --- TẠO DATA VÉ & CHI TIẾT VÉ-GHẾ ---
     for seat_id in chosen_seats:
         tic_id = f"TIC_{ticket_counter:05d}"
