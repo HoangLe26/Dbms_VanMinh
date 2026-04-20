@@ -445,13 +445,13 @@
                 });
         }
 
-        // Hủy vé
+        // Hủy vé (theo tài khoản đăng nhập)
         function cancelTicket(billId) {
             if (!confirm(`Bạn có chắc chắn muốn hủy Hóa đơn ${billId} không?\nLưu ý: Chỉ hỗ trợ hủy trước giờ khởi hành ít nhất 24 tiếng.`)) {
                 return;
             }
 
-            fetch('/api/cancel_ticket', {
+            fetch('/api/cancel_ticket_tai_khoan', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ bill_id: billId })
@@ -460,7 +460,7 @@
                 .then(data => {
                     if (data.success) {
                         alert('Hủy vé thành công! Ghế đã được hoàn trả lại hệ thống.');
-                        loadHistory(); // Tải lại danh sách ngay lập tức
+                        loadHistory();
                     } else {
                         alert('Lỗi: ' + data.error);
                     }

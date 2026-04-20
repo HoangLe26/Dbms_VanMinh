@@ -330,16 +330,21 @@ def lock_seats():
         phone = data.get('phone', '')
         name = data.get('name', 'Khách vãng lai')
         email = data.get('email', '')
-        
-        cursor.execute("SELECT customer_id FROM Customer WHERE phonenum = %s LIMIT 1", (phone,))
-        existing_customer = cursor.fetchone()
-        
-        if existing_customer:
-            customer_id = existing_customer[0]
+
+        # ƯU TIÊN: Nếu user đã đăng nhập thì gắn Bill vào đúng tài khoản session
+        session_customer_id = session.get('user_id')
+        if session_customer_id:
+            customer_id = session_customer_id
         else:
-            customer_id = f"CUS_{int(time.time())}"
-            sql_customer = "INSERT INTO Customer (customer_id, name, phonenum, email, customer_type) VALUES (%s, %s, %s, %s, 'normal')"
-            cursor.execute(sql_customer, (customer_id, name, phone, email))
+            # Khách vãng lai: tra theo số điện thoại
+            cursor.execute("SELECT customer_id FROM Customer WHERE phonenum = %s LIMIT 1", (phone,))
+            existing_customer = cursor.fetchone()
+            if existing_customer:
+                customer_id = existing_customer[0]
+            else:
+                customer_id = f"CUS_{int(time.time())}"
+                sql_customer = "INSERT INTO Customer (customer_id, name, phonenum, email, customer_type) VALUES (%s, %s, %s, %s, 'normal')"
+                cursor.execute(sql_customer, (customer_id, name, phone, email))
 
         # 2. Chèn hóa đơn với trạng thái 'Đang chờ'
         sql_bill = "INSERT INTO Bill (bill_id, total, method, status, date, customer_id) VALUES (%s, %s, %s, %s, NOW(), %s)"
@@ -407,34 +412,8 @@ def lay_lich_su_tai_khoan():
     db = get_db_connection()
     cursor = db.cursor(dictionary=True)
     try:
-        cursor.execute("""
-            SELECT
-                b.bill_id,
-                b.total,
-                b.status,
-                b.date        AS booking_date,
-                b.method,
-                dep_loc.province  AS dep_province,
-                dep_loc.province  AS dep_station,
-                arr_loc.province  AS arr_province,
-                arr_loc.province  AS arr_station,
-                t.dep_time,
-                t.arr_time,
-                GROUP_CONCAT(DISTINCT TRIM(s.seat_code) ORDER BY s.seat_code SEPARATOR ', ') AS seat_list
-            FROM Bill b
-            JOIN Ticket  tk  ON tk.bill_id  = b.bill_id
-            JOIN Trip    t   ON t.trip_id   = tk.trip_id
-            JOIN Location dep_loc ON dep_loc.loc_id = t.dep_sta_id
-            JOIN Location arr_loc ON arr_loc.loc_id = t.arr_sta_id
-            LEFT JOIN Ticket_Seat ts ON ts.tic_id   = tk.tic_id
-            LEFT JOIN Seat        s  ON s.seat_id   = ts.seat_id
-            WHERE b.customer_id = %s
-            GROUP BY b.bill_id, b.total, b.status, b.date, b.method,
-                     dep_loc.province,
-                     arr_loc.province,
-                     t.dep_time, t.arr_time
-            ORDER BY b.date DESC
-        """, (customer_id,))
+        # Gọi Procedure sp_LayLichSuTaiKhoan (xem truy_van_sql/sp_LayLichSuTaiKhoan.sql)
+        cursor.execute("CALL sp_LayLichSuTaiKhoan(%s)", (customer_id,))
         history = cursor.fetchall()
 
         for item in history:
@@ -447,6 +426,37 @@ def lay_lich_su_tai_khoan():
 
         return jsonify({"success": True, "history": history})
     except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+    finally:
+        cursor.close()
+        db.close()
+
+
+# ───── API Hủy vé theo tài khoản ─────
+@app.route('/api/cancel_ticket_tai_khoan', methods=['POST'])
+def cancel_ticket_tai_khoan():
+    customer_id = session.get('user_id')
+    if not customer_id:
+        return jsonify({"success": False, "error": "Chưa đăng nhập."})
+
+    data = request.get_json()
+    bill_id = data.get('bill_id', '')
+
+    if not bill_id:
+        return jsonify({"success": False, "error": "Thiếu mã hóa đơn."})
+
+    db = get_db_connection()
+    cursor = db.cursor()
+    try:
+        # Gọi Procedure sp_HuyVeTaiKhoan — kiểm tra quyền sở hữu + điều kiện 24h
+        cursor.execute("CALL sp_HuyVeTaiKhoan(%s, %s)", (customer_id, bill_id))
+        db.commit()
+        return jsonify({"success": True})
+    except mysql.connector.Error as err:
+        db.rollback()
+        return jsonify({"success": False, "error": err.msg})
+    except Exception as e:
+        db.rollback()
         return jsonify({"success": False, "error": str(e)})
     finally:
         cursor.close()
