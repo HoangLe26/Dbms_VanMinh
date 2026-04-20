@@ -343,49 +343,28 @@
             offset: 100 // Bắt đầu hiệu ứng khi cuộn tới cách 100px
         });
 
-        // Tải lịch sử khi mở Modal
+        // Tải lịch sử khi mở Modal — theo TÀI KHOẢN đang đăng nhập
         function loadHistory() {
             const loadingHtml = document.getElementById('historyLoading');
             const contentHtml = document.getElementById('historyContent');
 
             loadingHtml.style.display = 'block';
             contentHtml.style.display = 'none';
-            contentHtml.innerHTML = ''; // Xóa mảng cũ
+            contentHtml.innerHTML = '';
 
-            // 1. Mở LocalStorage lấy danh sách ID
-            let myBills = [];
-            try {
-                myBills = JSON.parse(localStorage.getItem("my_vanminh_tickets") || "[]");
-            } catch (e) {
-                myBills = [];
-            }
-
-            if (myBills.length === 0) {
-                loadingHtml.style.display = 'none';
-                contentHtml.style.display = 'block';
-                contentHtml.innerHTML = `
-                    <div class="text-center py-5 text-muted bg-white rounded-3">
-                        <i class="bi bi-ticket-detailed fs-1 text-secondary mb-3 d-block" style="opacity: 0.5;"></i>
-                        <h6>Bạn chưa có chuyến đi nào được lưu trên thiết bị này!</h6>
-                        <button type="button" class="btn btn-sm btn-vm-green mt-3 rounded-pill px-4" data-bs-dismiss="modal" onclick="document.querySelector('a[href=\\'/trip_list\\']').click()">Tiến hành Đặt vé</button>
-                    </div>
-                `;
-                return;
-            }
-
-            // 2. Fetch dữ liệu từ API CSDL
-            let billString = myBills.join(',');
-            fetch('/api/lay_lich_su', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ device_bills: billString })
-            })
+            // Gọi API lấy lịch sử theo tài khoản (customer_id từ session server)
+            fetch('/api/lay_lich_su_tai_khoan', { method: 'GET' })
                 .then(res => res.json())
                 .then(data => {
                     loadingHtml.style.display = 'none';
                     contentHtml.style.display = 'block';
 
-                    if (data.success && data.history && data.history.length > 0) {
+                    if (!data.success) {
+                        contentHtml.innerHTML = `<div class="alert alert-warning text-center"><i class="bi bi-exclamation-circle me-2"></i>${data.error || 'Không thể tải lịch sử.'}</div>`;
+                        return;
+                    }
+
+                    if (data.history && data.history.length > 0) {
                         let htmlBuilder = '<div class="row g-3">';
                         data.history.forEach(item => {
                             let statusBadge = '';
@@ -436,6 +415,8 @@
                                             <div class="col-md-4 mt-3 mt-md-0 d-flex flex-column align-items-md-end justify-content-center border-start border-light-subtle">
                                                 <span class="text-muted small">Mã Hóa Đơn</span>
                                                 <strong class="font-monospace text-secondary">${item.bill_id}</strong>
+                                                <span class="text-muted small mt-2">Ngày đặt</span>
+                                                <span class="small text-dark">${item.booking_date}</span>
                                                 <span class="text-muted small mt-2">Tổng tiền</span>
                                                 <h5 class="text-vm-red fw-bold mb-0">${new Intl.NumberFormat('vi-VN').format(item.total)}đ</h5>
                                                 ${cancelButton}
@@ -444,18 +425,17 @@
                                     </div>
                                 </div>
                             </div>
-                        `;
+                            `;
                         });
                         htmlBuilder += '</div>';
                         contentHtml.innerHTML = htmlBuilder;
-                    } else if (data.success) {
-                        contentHtml.innerHTML = `
-                        <div class="text-center py-5 text-muted bg-white rounded-3 border">
-                            <i class="bi bi-hourglass-bottom fs-1 text-secondary mb-3 d-block" style="opacity: 0.5;"></i>
-                            <h6>Chưa có chuyến đi nào được CSDL ghi nhận.</h6>
-                        </div>`;
                     } else {
-                        contentHtml.innerHTML = '<div class="alert alert-danger text-center">Lỗi csdl khi tải: ' + data.error + '</div>';
+                        contentHtml.innerHTML = `
+                            <div class="text-center py-5 text-muted bg-white rounded-3">
+                                <i class="bi bi-ticket-detailed fs-1 text-secondary mb-3 d-block" style="opacity: 0.5;"></i>
+                                <h6>Tài khoản của bạn chưa có đơn đặt vé nào!</h6>
+                                <a href="/trip_list" class="btn btn-sm btn-vm-green mt-3 rounded-pill px-4" data-bs-dismiss="modal">Đặt vé ngay</a>
+                            </div>`;
                     }
                 })
                 .catch(err => {

@@ -52,6 +52,90 @@ def logout():
     return redirect(url_for('login'))
 # ───── End Logout ─────
 
+# ───── Start Register ─────
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if 'user_name' in session:
+        return redirect(url_for('home'))
+
+    if request.method == 'POST':
+        fullname = request.form.get('fullname', '').strip()
+        phone    = request.form.get('phone', '').strip()
+        email    = request.form.get('email', '').strip()
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '').strip()
+
+        # ── Validate bắt buộc ──
+        if not fullname:
+            flash('Vui lòng nhập họ và tên!', 'error')
+            return render_template('register.html', form_data=request.form)
+
+        if not phone:
+            flash('Vui lòng nhập số điện thoại!', 'error')
+            return render_template('register.html', form_data=request.form)
+
+        # ── Validate username & password đi cùng nhau ──
+        if username and not password:
+            flash('Vui lòng nhập mật khẩu khi sử dụng tên đăng nhập!', 'error')
+            return render_template('register.html', form_data=request.form)
+
+        if password and not username:
+            flash('Vui lòng nhập tên đăng nhập khi sử dụng mật khẩu!', 'error')
+            return render_template('register.html', form_data=request.form)
+
+        if password and len(password) < 6:
+            flash('Mật khẩu phải có ít nhất 6 ký tự!', 'error')
+            return render_template('register.html', form_data=request.form)
+
+        db = get_db_connection()
+        cursor = db.cursor(dictionary=True)
+        try:
+            # Kiểm tra số điện thoại đã tồn tại chưa
+            cursor.execute("SELECT customer_id FROM Customer WHERE phonenum = %s LIMIT 1", (phone,))
+            if cursor.fetchone():
+                flash('Số điện thoại này đã được đăng ký!', 'error')
+                return render_template('register.html', form_data=request.form)
+
+            # Kiểm tra tên đăng nhập đã tồn tại chưa (nếu có nhập)
+            if username:
+                cursor.execute("SELECT customer_id FROM Customer WHERE username = %s LIMIT 1", (username,))
+                if cursor.fetchone():
+                    flash('Tên đăng nhập này đã được sử dụng, vui lòng chọn tên khác!', 'error')
+                    return render_template('register.html', form_data=request.form)
+
+            # Tạo customer_id mới
+            import time as _time
+            customer_id = f"CUS_{int(_time.time())}"
+
+            # Chèn khách hàng mới vào DB
+            sql = """
+                INSERT INTO Customer (customer_id, name, phonenum, email, username, password, customer_type)
+                VALUES (%s, %s, %s, %s, %s, %s, 'normal')
+            """
+            cursor.execute(sql, (
+                customer_id,
+                fullname,
+                phone,
+                email if email else None,
+                username if username else None,
+                password if password else None
+            ))
+            db.commit()
+
+            flash('Đăng ký thành công! Vui lòng đăng nhập.', 'success')
+            return redirect(url_for('login'))
+
+        except Exception as e:
+            db.rollback()
+            flash(f'Lỗi hệ thống: {str(e)}', 'error')
+            return render_template('register.html', form_data=request.form)
+        finally:
+            cursor.close()
+            db.close()
+
+    return render_template('register.html')
+# ───── End Register ─────
+
 # ───── Trang chủ ─────
 @app.route('/')
 def home():
@@ -412,7 +496,7 @@ def lock_seats():
         cursor.close()
         db.close()
 
-# ───── API Lấy lịch sử thiết bị ─────
+# ───── API Lấy lịch sử thiết bị (cũ - giữ lại để tương thích) ─────
 @app.route('/api/lay_lich_su', methods=['POST'])
 def lay_lich_su():
     data = request.get_json()
@@ -424,11 +508,8 @@ def lay_lich_su():
     db = get_db_connection()
     cursor = db.cursor(dictionary=True)
     try:
-        # Gọi CSDL 
         cursor.execute("CALL sp_LayLichSuThietBi(%s)", (device_bills,))
         history = cursor.fetchall()
-        
-        # Định dạng lại thời gian để Frontend hiển thị đẹp hơn
         for item in history:
             if item['booking_date']:
                 item['booking_date'] = item['booking_date'].strftime('%H:%M %d/%m/%Y')
@@ -436,7 +517,61 @@ def lay_lich_su():
                 item['dep_time'] = item['dep_time'].strftime('%H:%M %d/%m/%Y')
             if item['arr_time']:
                 item['arr_time'] = item['arr_time'].strftime('%H:%M %d/%m/%Y')
-                
+        return jsonify({"success": True, "history": history})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+    finally:
+        cursor.close()
+        db.close()
+
+# ───── API Lấy lịch sử theo tài khoản ─────
+@app.route('/api/lay_lich_su_tai_khoan', methods=['GET'])
+def lay_lich_su_tai_khoan():
+    customer_id = session.get('user_id')
+    if not customer_id:
+        return jsonify({"success": False, "error": "Chưa đăng nhập"})
+
+    db = get_db_connection()
+    cursor = db.cursor(dictionary=True)
+    try:
+        cursor.execute("""
+            SELECT
+                b.bill_id,
+                b.total,
+                b.status,
+                b.date        AS booking_date,
+                b.method,
+                dep_loc.province  AS dep_province,
+                dep_loc.province  AS dep_station,
+                arr_loc.province  AS arr_province,
+                arr_loc.province  AS arr_station,
+                t.dep_time,
+                t.arr_time,
+                GROUP_CONCAT(DISTINCT TRIM(s.seat_code) ORDER BY s.seat_code SEPARATOR ', ') AS seat_list
+            FROM Bill b
+            JOIN Ticket  tk  ON tk.bill_id  = b.bill_id
+            JOIN Trip    t   ON t.trip_id   = tk.trip_id
+            JOIN Location dep_loc ON dep_loc.loc_id = t.dep_sta_id
+            JOIN Location arr_loc ON arr_loc.loc_id = t.arr_sta_id
+            LEFT JOIN Ticket_Seat ts ON ts.tic_id   = tk.tic_id
+            LEFT JOIN Seat        s  ON s.seat_id   = ts.seat_id
+            WHERE b.customer_id = %s
+            GROUP BY b.bill_id, b.total, b.status, b.date, b.method,
+                     dep_loc.province,
+                     arr_loc.province,
+                     t.dep_time, t.arr_time
+            ORDER BY b.date DESC
+        """, (customer_id,))
+        history = cursor.fetchall()
+
+        for item in history:
+            if item['booking_date']:
+                item['booking_date'] = item['booking_date'].strftime('%H:%M %d/%m/%Y')
+            if item['dep_time']:
+                item['dep_time'] = item['dep_time'].strftime('%H:%M %d/%m/%Y')
+            if item['arr_time']:
+                item['arr_time'] = item['arr_time'].strftime('%H:%M %d/%m/%Y')
+
         return jsonify({"success": True, "history": history})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})

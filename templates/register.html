@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng ký - Nhà xe Văn Minh</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='CSS/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+
+        .login-wrapper {
+            display: flex;
+            height: 100vh;
+            width: 100%;
+        }
+
+        /* NỬA BÊN TRÁI */
+        .login-left {
+            flex: 1.2;
+            background-image: url("{{ url_for('static', filename='Image/banner_1.jpg') }}");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            position: relative;
+        }
+
+        .login-left-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(11,138,79,0.7) 0%, rgba(0,60,30,0.85) 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .login-left-overlay h1 {
+            font-size: 2.4rem;
+            font-weight: 800;
+            margin-bottom: 12px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .login-left-overlay p {
+            font-size: 1.05rem;
+            opacity: 0.9;
+            max-width: 320px;
+            line-height: 1.6;
+        }
+
+        /* NỬA BÊN PHẢI */
+        .login-right {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #ffffff;
+            padding: 30px 40px;
+            overflow-y: auto;
+        }
+
+        .login-box {
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .login-box h2 {
+            font-weight: 800;
+            color: #0b8a4f;
+            margin-bottom: 6px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 1.5rem;
+        }
+
+        .login-box .subtitle {
+            text-align: center;
+            color: #888;
+            font-size: 0.88rem;
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 7px;
+            font-weight: 600;
+            color: #444;
+            font-size: 0.9rem;
+        }
+
+        .form-group label .required {
+            color: #e74c3c;
+            margin-left: 2px;
+        }
+
+        .input-icon-wrap {
+            position: relative;
+        }
+
+        .input-icon-wrap i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #aaa;
+            font-size: 14px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 13px 15px 13px 40px;
+            border: 1.5px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            background-color: #f9f9f9;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus {
+            border-color: #0b8a4f;
+            background-color: #fff;
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(11, 138, 79, 0.1);
+        }
+
+        .form-group input.optional-field {
+            border-color: #e8e8e8;
+        }
+
+        .divider-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 18px 0 14px;
+            color: #bbb;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .divider-label::before,
+        .divider-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #ebebeb;
+        }
+
+        .btn-register {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(to right, #0b8a4f, #0dab61);
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-top: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-register:hover {
+            background: linear-gradient(to right, #096e3f, #0b8a4f);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(11, 138, 79, 0.3);
+        }
+
+        /* Flash messages */
+        .flash-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 18px;
+            text-align: center;
+            font-size: 14px;
+            border: 1px solid #f5c6cb;
+        }
+
+        .flash-success {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 18px;
+            text-align: center;
+            font-size: 14px;
+            border: 1px solid #c3e6cb;
+        }
+
+        .login-footer {
+            margin-top: 22px;
+            text-align: center;
+            font-size: 14px;
+            color: #777;
+        }
+
+        .login-footer a {
+            color: #0b8a4f;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .login-footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Mobile */
+        @media (max-width: 992px) {
+            .login-left { display: none; }
+            body, html { overflow: auto; }
+            .login-wrapper { height: auto; min-height: 100vh; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-wrapper">
+        <!-- BÊN TRÁI -->
+        <div class="login-left">
+            <div class="login-left-overlay">
+                <h1>Văn Minh</h1>
+                <p>Đặt vé xe nhanh chóng, tiện lợi — chỉ cần một tài khoản để bắt đầu hành trình của bạn.</p>
+            </div>
+        </div>
+
+        <!-- BÊN PHẢI: FORM ĐĂNG KÝ -->
+        <div class="login-right">
+            <div class="login-box">
+                <h2>Đăng ký</h2>
+                <p class="subtitle">Tạo tài khoản để trải nghiệm dịch vụ tốt nhất</p>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash-{{ category }}">
+                            <i class="fa fa-{{ 'check-circle' if category == 'success' else 'exclamation-circle' }} me-2"></i> {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                {% endwith %}
+
+                <form action="/register" method="POST" id="registerForm">
+
+                    <!-- Họ và tên (bắt buộc) -->
+                    <div class="form-group">
+                        <label for="fullname">Họ và tên <span class="required">*</span></label>
+                        <div class="input-icon-wrap">
+                            <i class="fa fa-user"></i>
+                            <input type="text" id="fullname" name="fullname"
+                                   placeholder="Nhập họ và tên đầy đủ"
+                                   value="{{ form_data.fullname if form_data else '' }}"
+                                   required>
+                        </div>
+                    </div>
+
+                    <!-- Số điện thoại (bắt buộc) -->
+                    <div class="form-group">
+                        <label for="phone">Số điện thoại <span class="required">*</span></label>
+                        <div class="input-icon-wrap">
+                            <i class="fa fa-phone"></i>
+                            <input type="tel" id="phone" name="phone"
+                                   placeholder="Nhập số điện thoại (VD: 0901234567)"
+                                   value="{{ form_data.phone if form_data else '' }}"
+                                   pattern="(0|\+84)[0-9]{9}"
+                                   title="Số điện thoại phải bắt đầu bằng 0 hoặc +84 và có 10 chữ số"
+                                   required>
+                        </div>
+                    </div>
+
+                    <div class="divider-label">Thông tin tùy chọn</div>
+
+                    <!-- Email (không bắt buộc) -->
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <div class="input-icon-wrap">
+                            <i class="fa fa-envelope"></i>
+                            <input type="email" id="email" name="email"
+                                   class="optional-field"
+                                   placeholder="Nhập địa chỉ email (không bắt buộc)"
+                                   value="{{ form_data.email if form_data else '' }}">
+                        </div>
+                    </div>
+
+                    <!-- Tên đăng nhập (không bắt buộc) -->
+                    <div class="form-group">
+                        <label for="username">Tên đăng nhập</label>
+                        <div class="input-icon-wrap">
+                            <i class="fa fa-id-card"></i>
+                            <input type="text" id="username" name="username"
+                                   class="optional-field"
+                                   placeholder="Đặt tên đăng nhập (không bắt buộc)"
+                                   value="{{ form_data.username if form_data else '' }}"
+                                   autocomplete="username">
+                        </div>
+                    </div>
+
+                    <!-- Mật khẩu (không bắt buộc nếu không có username) -->
+                    <div class="form-group">
+                        <label for="password">Mật khẩu</label>
+                        <div class="input-icon-wrap">
+                            <i class="fa fa-lock"></i>
+                            <input type="password" id="password" name="password"
+                                   class="optional-field"
+                                   placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)"
+                                   autocomplete="new-password">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-register">
+                        <i class="fa fa-user-plus me-2"></i> Tạo tài khoản
+                    </button>
+                </form>
+
+                <div class="login-footer">
+                    <p>Đã có tài khoản? <a href="{{ url_for('login') }}">Đăng nhập ngay</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Validate: nếu nhập username thì phải nhập password và ngược lại
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            if (username && !password) {
+                e.preventDefault();
+                alert('Vui lòng nhập mật khẩu khi sử dụng tên đăng nhập!');
+                document.getElementById('password').focus();
+                return;
+            }
+            if (!username && password) {
+                e.preventDefault();
+                alert('Vui lòng nhập tên đăng nhập khi sử dụng mật khẩu!');
+                document.getElementById('username').focus();
+                return;
+            }
+        });
+    </script>
+</body>
+</html>
