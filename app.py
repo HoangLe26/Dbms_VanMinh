@@ -1,8 +1,10 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, session, redirect, url_for, flash
 import mysql.connector
 import unicodedata
+from back_end.check_login import verify_account
 
 app = Flask(__name__, static_folder='assets', static_url_path='/assets')
+app.secret_key = 'vanminh_secret_key_2026'
 
 def get_db_connection():
     return mysql.connector.connect(
@@ -12,16 +14,64 @@ def get_db_connection():
         database="dbms_vanminh"
     )
 
+# ───── Start Login ─────
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if 'user_name' in session:
+        return redirect(url_for('home'))
+    # xử lí bấm nút login
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+
+        # Gọi file check_login
+        success, user = verify_account(username, password)
+
+        if success:
+            # Lưu thẻ ra vào 
+            session['user_name'] = user['name']
+            session['user_id'] = user['customer_id']
+            # Cấp phép thành công -> về Trang chủ
+            return redirect(url_for('home'))
+        else:
+            # Sai mật khẩu -> Báo lỗi và bắt nhập lại
+            flash("Tên đăng nhập hoặc mật khẩu không chính xác!")
+            return redirect(url_for('login'))
+
+    # Nếu truy cập bình thường (GET) thì hiện form giao diện lên
+    return render_template('login.html')
+
+# ───── End Login ─────
+
+## ───── Start logout ─────
+@app.route('/logout')
+def logout():
+    session.clear() # Xóa sạch "thẻ" người dùng
+    # Quan trọng: Chuyển hướng thẳng về trang login thay vì home
+    return redirect(url_for('login'))
+# ───── End Logout ─────
+
 # ───── Trang chủ ─────
 @app.route('/')
 def home():
+    # thêm user_name kiểm tra đăng nhập
+    # Bước 1: Kiểm tra xem người dùng đã có tên trong phiên làm việc (session) chưa
+    user_name = session.get('user_name')
+
+    # Bước 2: Nếu CHƯA đăng nhập (biến user_name bị trống)
+    if not user_name:
+        # Lập tức chuyển hướng người dùng sang trang Đăng nhập
+        return redirect(url_for('login'))
     db = get_db_connection()
     cursor = db.cursor(dictionary=True)
     cursor.execute("SELECT DISTINCT province FROM Location ORDER BY province")
     danh_sach_tinh = cursor.fetchall()
     cursor.close()
     db.close()
-    return render_template('index.html', provinces=danh_sach_tinh)
+
+    # sửa lại: trả về username hiển thị lên giao diện
+    return render_template('index.html', provinces=danh_sach_tinh ,user_name=user_name)
 
 
 # ───── Danh sách chuyến xe ─────

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập - Nhà xe Văn Minh</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='CSS/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* TOÀN BỘ MÀN HÌNH */
+        body,
+        html {
+            height: 100%;
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            /* Tránh cuộn trang không cần thiết */
+        }
+
+        .login-wrapper {
+            display: flex;
+            height: 100vh;
+            width: 100%;
+        }
+
+        /* NỬA BÊN TRÁI: CHỈ HIỆN ẢNH (Đã xóa chữ) */
+        .login-left {
+            flex: 1.2;
+            /* Nửa trái rộng hơn để khoe ảnh xe */
+            /* Flask lấy ảnh từ assets/Image/banner_1.jpg */
+            background-image: url("{{ url_for('static', filename='Image/banner_1.jpg') }}");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        /* NỬA BÊN PHẢI: FORM ĐĂNG NHẬP */
+        .login-right {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #ffffff;
+            padding: 40px;
+        }
+
+        .login-box {
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-box h2 {
+            font-weight: 800;
+            color: #0b8a4f;
+            /* Màu xanh đặc trưng Văn Minh */
+            margin-bottom: 30px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #444;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px 15px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background-color: #f9f9f9;
+        }
+
+        .form-group input:focus {
+            border-color: #0b8a4f;
+            background-color: #fff;
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(11, 138, 79, 0.1);
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(to right, #ffd700, #ffb300);
+            border: none;
+            border-radius: 10px;
+            color: #000;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-top: 15px;
+            text-transform: uppercase;
+        }
+
+        .btn-login:hover {
+            background: linear-gradient(to right, #ffcc00, #ffa500);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Thông báo lỗi */
+        .flash-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            text-align: center;
+            font-size: 14px;
+            border: 1px solid #f5c6cb;
+        }
+
+        .login-footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 14px;
+            color: #777;
+        }
+
+        .login-footer a {
+            color: #0b8a4f;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        /* Mobile */
+        @media (max-width: 992px) {
+            .login-left {
+                display: none;
+                /* Ẩn ảnh trên màn hình nhỏ để ưu tiên form */
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="login-wrapper">
+        <div class="login-left"></div>
+
+        <div class="login-right">
+            <div class="login-box">
+                <h2>ĐĂNG NHẬP</h2>
+
+                {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                <div class="flash-error">
+                    <i class="fa fa-exclamation-circle me-2"></i> {{ messages[0] }}
+                </div>
+                {% endif %}
+                {% endwith %}
+
+                <form action="/login" method="POST">
+                    <div class="form-group">
+                        <label for="username"><i class="fa fa-user me-2"></i> Tên đăng nhập</label>
+                        <input type="text" id="username" name="username" placeholder="Nhập tài khoản" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password"><i class="fa fa-lock me-2"></i> Mật khẩu</label>
+                        <input type="password" id="password" name="password" placeholder="Nhập mật khẩu" required>
+                    </div>
+                    <button type="submit" class="btn-login">VÀO HỆ THỐNG</button>
+                </form>
+
+                <div class="login-footer">
+                    <p>Chưa có tài khoản? <a href="#">Đăng ký ngay</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>
