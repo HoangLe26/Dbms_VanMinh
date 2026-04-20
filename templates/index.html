@@ -60,7 +60,10 @@
                 </li>
             </ul>
 
-            <div>
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-outline-dark rounded-pill px-3 text-nowrap" data-bs-toggle="modal" data-bs-target="#historyModal" onclick="loadHistory()" style="font-size: 0.9rem; font-weight: 500; border-width: 2px;">
+                    <i class="bi bi-clock-history"></i> LỊCH SỬ ĐẶT VÉ
+                </button>
                 <a href="/trip_list" class="btn btn-vm-green rounded-pill px-4 text-nowrap">ĐẶT VÉ NGAY</a>
             </div>
 
@@ -281,6 +284,27 @@
         <a href="tel:0975767676" class="btn-float btn-phone" title="Gọi ngay"><i class="bi bi-telephone-fill"></i></a>
     </div>
 
+    <!-- History Modal -->
+    <div class="modal fade" id="historyModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header align-items-center" style="background-color: #fccf00; border-bottom: none;">
+                    <h5 class="modal-title fw-bold text-dark mb-0"><i class="bi bi-clock-history me-2"></i>Lịch sử đặt vé của bạn</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4" style="background-color: #fbf8f1;" id="historyModalBody">
+                    <div class="text-center py-5 text-muted" id="historyLoading">
+                        <div class="spinner-border text-vm-green mb-3" role="status"></div>
+                        <p>Đang tải lịch sử chuyến đi...</p>
+                    </div>
+                    <div id="historyContent" style="display: none;">
+                        <!-- Các vé sẽ được chèn vào đây bởi JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/vn.js"></script>
@@ -296,6 +320,153 @@
             once: true, // Hiệu ứng chỉ chạy 1 lần khi cuộn tới
             offset: 100 // Bắt đầu hiệu ứng khi cuộn tới cách 100px
         });
+
+        // Tải lịch sử khi mở Modal
+        function loadHistory() {
+            const loadingHtml = document.getElementById('historyLoading');
+            const contentHtml = document.getElementById('historyContent');
+            
+            loadingHtml.style.display = 'block';
+            contentHtml.style.display = 'none';
+            contentHtml.innerHTML = ''; // Xóa mảng cũ
+            
+            // 1. Mở LocalStorage lấy danh sách ID
+            let myBills = [];
+            try {
+                myBills = JSON.parse(localStorage.getItem("my_vanminh_tickets") || "[]");
+            } catch(e) {
+                myBills = [];
+            }
+            
+            if (myBills.length === 0) {
+                loadingHtml.style.display = 'none';
+                contentHtml.style.display = 'block';
+                contentHtml.innerHTML = `
+                    <div class="text-center py-5 text-muted bg-white rounded-3">
+                        <i class="bi bi-ticket-detailed fs-1 text-secondary mb-3 d-block" style="opacity: 0.5;"></i>
+                        <h6>Bạn chưa có chuyến đi nào được lưu trên thiết bị này!</h6>
+                        <button type="button" class="btn btn-sm btn-vm-green mt-3 rounded-pill px-4" data-bs-dismiss="modal" onclick="document.querySelector('a[href=\\'/trip_list\\']').click()">Tiến hành Đặt vé</button>
+                    </div>
+                `;
+                return;
+            }
+
+            // 2. Fetch dữ liệu từ API CSDL
+            let billString = myBills.join(','); 
+            fetch('/api/lay_lich_su', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ device_bills: billString })
+            })
+            .then(res => res.json())
+            .then(data => {
+                loadingHtml.style.display = 'none';
+                contentHtml.style.display = 'block';
+                
+                if (data.success && data.history && data.history.length > 0) {
+                    let htmlBuilder = '<div class="row g-3">';
+                    data.history.forEach(item => {
+                        let statusBadge = '';
+                        let cancelButton = '';
+
+                        if(item.status === 'Đã thanh toán') {
+                            statusBadge = '<span class="badge bg-success">Đã thanh toán</span>';
+                            cancelButton = `<button class="btn btn-sm btn-outline-danger mt-3 w-100" style="border-radius: 8px;" onclick="cancelTicket('${item.bill_id}')"><i class="bi bi-x-circle me-1"></i>Hủy vé</button>`;
+                        } else if(item.status === 'Hủy') {
+                            statusBadge = '<span class="badge bg-danger">Đã Hủy</span>';
+                        } else {
+                            statusBadge = '<span class="badge bg-warning text-dark">Đang chờ thanh toán</span>';
+                            cancelButton = `<button class="btn btn-sm btn-outline-danger mt-3 w-100" style="border-radius: 8px;" onclick="cancelTicket('${item.bill_id}')"><i class="bi bi-x-circle me-1"></i>Hủy vé</button>`;
+                        }
+                        
+                        htmlBuilder += `
+                            <div class="col-12">
+                                <div class="card border border-secondary-subtle shadow-sm rounded-4 overflow-hidden">
+                                    <div class="card-header bg-white border-bottom pt-3 pb-2 d-flex justify-content-between align-items-center">
+                                        <h6 class="fw-bold mb-0" style="color: #0b8a4f;">${item.dep_province} <i class="bi bi-arrow-right mx-2 text-muted"></i> ${item.arr_province}</h6>
+                                        ${statusBadge}
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-8">
+                                                <div class="d-flex mb-2">
+                                                    <i class="bi bi-calendar-event text-secondary me-2"></i>
+                                                    <div>
+                                                        <span class="small text-muted d-block">Giờ khởi hành</span>
+                                                        <strong class="text-dark">${item.dep_time}</strong>
+                                                    </div>
+                                                </div>
+                                                <div class="row mb-2">
+                                                    <div class="col-6">
+                                                        <span class="small text-muted d-block"><i class="bi bi-geo-alt me-1"></i>Đón tại</span>
+                                                        <strong class="small">${item.dep_station}</strong>
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <span class="small text-muted d-block"><i class="bi bi-geo-alt-fill me-1"></i>Trả tại</span>
+                                                        <strong class="small">${item.arr_station}</strong>
+                                                    </div>
+                                                </div>
+                                                <div class="mt-2 pt-2 border-top">
+                                                    <span class="small text-muted me-2"><i class="bi bi-ticket-fill text-vm-red me-1"></i>Ghế:</span>
+                                                    <strong class="text-primary">${item.seat_list || '---'}</strong>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4 mt-3 mt-md-0 d-flex flex-column align-items-md-end justify-content-center border-start border-light-subtle">
+                                                <span class="text-muted small">Mã Hóa Đơn</span>
+                                                <strong class="font-monospace text-secondary">${item.bill_id}</strong>
+                                                <span class="text-muted small mt-2">Tổng tiền</span>
+                                                <h5 class="text-vm-red fw-bold mb-0">${new Intl.NumberFormat('vi-VN').format(item.total)}đ</h5>
+                                                ${cancelButton}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    htmlBuilder += '</div>';
+                    contentHtml.innerHTML = htmlBuilder;
+                } else if (data.success) {
+                    contentHtml.innerHTML = `
+                        <div class="text-center py-5 text-muted bg-white rounded-3 border">
+                            <i class="bi bi-hourglass-bottom fs-1 text-secondary mb-3 d-block" style="opacity: 0.5;"></i>
+                            <h6>Chưa có chuyến đi nào được CSDL ghi nhận.</h6>
+                        </div>`;
+                } else {
+                    contentHtml.innerHTML = '<div class="alert alert-danger text-center">Lỗi csdl khi tải: ' + data.error + '</div>';
+                }
+            })
+            .catch(err => {
+                loadingHtml.style.display = 'none';
+                contentHtml.style.display = 'block';
+                contentHtml.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>Lỗi kết nối máy chủ! Vui lòng thử lại.</div>';
+            });
+        }
+
+        // Hủy vé
+        function cancelTicket(billId) {
+            if (!confirm(`Bạn có chắc chắn muốn hủy Hóa đơn ${billId} không?\nLưu ý: Chỉ hỗ trợ hủy trước giờ khởi hành ít nhất 24 tiếng.`)) {
+                return;
+            }
+
+            fetch('/api/cancel_ticket', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bill_id: billId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Hủy vé thành công! Ghế đã được hoàn trả lại hệ thống.');
+                    loadHistory(); // Tải lại danh sách ngay lập tức
+                } else {
+                    alert('Lỗi: ' + data.error);
+                }
+            })
+            .catch(err => {
+                alert('Lỗi kết nối máy chủ khi thực hiện hủy vé!');
+            });
+        }
     </script>
 </body>
 

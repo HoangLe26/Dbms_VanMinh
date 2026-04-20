@@ -344,6 +344,19 @@
                         .then(res => res.json())
                         .then(data => {
                             if (data.success) {
+                                // ---- LƯU VÀO ĐIỆN THOẠI KHÁCH HÀNG ----
+                                try {
+                                    let existingBills = JSON.parse(localStorage.getItem("my_vanminh_tickets") || "[]");
+                                    // Tránh lưu trùng
+                                    if (!existingBills.includes(data.bill_id)) {
+                                        existingBills.push(data.bill_id);
+                                        localStorage.setItem("my_vanminh_tickets", JSON.stringify(existingBills));
+                                    }
+                                } catch(e) {
+                                    console.error("Lỗi khi lưu LocalStorage", e);
+                                }
+                                // ---------------------------------------
+
                                 const phoneInput = pane.querySelector('input[placeholder="Số điện thoại (*)"]').value || '';
                                 const nameInput = pane.querySelector('input[placeholder="Họ tên (*)"]').value || '';
                                 const depProv = pane.getAttribute('data-dep-province') || '';

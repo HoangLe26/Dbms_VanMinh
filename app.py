@@ -319,10 +319,24 @@ def lock_seats():
         import time
         bill_id = f"BILL_{int(time.time())}"
         
+        # 1.5. Xử lý thông tin khách hàng
+        phone = data.get('phone', '')
+        name = data.get('name', 'Khách vãng lai')
+        email = data.get('email', '')
+        
+        cursor.execute("SELECT customer_id FROM Customer WHERE phonenum = %s LIMIT 1", (phone,))
+        existing_customer = cursor.fetchone()
+        
+        if existing_customer:
+            customer_id = existing_customer[0]
+        else:
+            customer_id = f"CUS_{int(time.time())}"
+            sql_customer = "INSERT INTO Customer (customer_id, name, phonenum, email, customer_type) VALUES (%s, %s, %s, %s, 'normal')"
+            cursor.execute(sql_customer, (customer_id, name, phone, email))
+
         # 2. Chèn hóa đơn với trạng thái 'Đang chờ'
-        # Lưu ý: Tên cột 'total' và 'date' khớp với file app.py của bạn
         sql_bill = "INSERT INTO Bill (bill_id, total, method, status, date, customer_id) VALUES (%s, %s, %s, %s, NOW(), %s)"
-        cursor.execute(sql_bill, (bill_id, data['total_price'], 'QR', 'Đang chờ', 'CUS_001'))
+        cursor.execute(sql_bill, (bill_id, data['total_price'], 'QR', 'Đang chờ', customer_id))
         # 3. Chèn vào bảng Ticket và Ticket_Seat cho TỪNG ghế
         unit_price = data['total_price'] / len(data['seats'])
         
@@ -341,6 +355,64 @@ def lock_seats():
 
         db.commit()
         return jsonify({"success": True, "bill_id": bill_id})
+    except Exception as e:
+        db.rollback()
+        return jsonify({"success": False, "error": str(e)})
+    finally:
+        cursor.close()
+        db.close()
+
+# ───── API Lấy lịch sử thiết bị ─────
+@app.route('/api/lay_lich_su', methods=['POST'])
+def lay_lich_su():
+    data = request.get_json()
+    device_bills = data.get('device_bills', '')
+    
+    if not device_bills.strip():
+        return jsonify({"success": True, "history": []})
+        
+    db = get_db_connection()
+    cursor = db.cursor(dictionary=True)
+    try:
+        # Gọi CSDL 
+        cursor.execute("CALL sp_LayLichSuThietBi(%s)", (device_bills,))
+        history = cursor.fetchall()
+        
+        # Định dạng lại thời gian để Frontend hiển thị đẹp hơn
+        for item in history:
+            if item['booking_date']:
+                item['booking_date'] = item['booking_date'].strftime('%H:%M %d/%m/%Y')
+            if item['dep_time']:
+                item['dep_time'] = item['dep_time'].strftime('%H:%M %d/%m/%Y')
+            if item['arr_time']:
+                item['arr_time'] = item['arr_time'].strftime('%H:%M %d/%m/%Y')
+                
+        return jsonify({"success": True, "history": history})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+    finally:
+        cursor.close()
+        db.close()
+
+# ───── API Hủy vé thiết bị ─────
+@app.route('/api/cancel_ticket', methods=['POST'])
+def cancel_ticket():
+    data = request.get_json()
+    bill_id = data.get('bill_id', '')
+    
+    if not bill_id:
+        return jsonify({"success": False, "error": "Thiếu mã hóa đơn."})
+        
+    db = get_db_connection()
+    cursor = db.cursor()
+    try:
+        cursor.execute("CALL sp_HuyVeThietBi(%s)", (bill_id,))
+        db.commit()
+        return jsonify({"success": True})
+    except mysql.connector.Error as err:
+        db.rollback()
+        # err.msg chứa thông báo từ SIGNAL SQLSTATE '45000'
+        return jsonify({"success": False, "error": err.msg})
     except Exception as e:
         db.rollback()
         return jsonify({"success": False, "error": str(e)})
