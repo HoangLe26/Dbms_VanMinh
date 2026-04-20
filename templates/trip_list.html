@@ -209,10 +209,6 @@
                     </div>
 
                     <div class="col-lg-4 px-lg-4 form-group-custom">
-                        <h6 class="fw-bold mb-3">Thông tin khách hàng</h6>
-                        <input type="text" class="form-control mb-2" placeholder="Số điện thoại (*)">
-                        <input type="text" class="form-control mb-2" placeholder="Họ tên (*)">
-                        <input type="email" class="form-control mb-4" placeholder="Email">
 
                         <div class="d-flex justify-content-between align-items-end mt-4 mb-4">
                             <span class="text-muted">Ghế: <br><strong
@@ -317,14 +313,6 @@
                     });
                 });
                 checkoutBtn.addEventListener('click', function () {
-                    const phoneInputVal = pane.querySelector('input[placeholder="Số điện thoại (*)"]').value;
-                    const nameInputVal = pane.querySelector('input[placeholder="Họ tên (*)"]').value;
-
-                    if (!phoneInputVal || !nameInputVal) {
-                        alert('Vui lòng nhập đầy đủ Số điện thoại và Họ tên trước khi thanh toán!');
-                        return;
-                    }
-
                     // Đổi text nút thành Đang xử lý để khách không bấm 2 lần
                     this.innerText = 'Đang giữ chỗ...';
                     this.disabled = true;
@@ -357,8 +345,8 @@
                                 }
                                 // ---------------------------------------
 
-                                const phoneInput = pane.querySelector('input[placeholder="Số điện thoại (*)"]').value || '';
-                                const nameInput = pane.querySelector('input[placeholder="Họ tên (*)"]').value || '';
+                                const phoneInput = '';
+                                const nameInput = '';
                                 const depProv = pane.getAttribute('data-dep-province') || '';
                                 const depSta = pane.getAttribute('data-dep-station') || '';
                                 const arrProv = pane.getAttribute('data-arr-province') || '';
