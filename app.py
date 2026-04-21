@@ -319,54 +319,43 @@ def payment():
 @app.route('/api/lock_seats', methods=['POST'])
 def lock_seats():
     data = request.get_json()
+
+    # Lấy thông tin từ request
+    phone  = data.get('phone', '')
+    name   = data.get('name', 'Khách vãng lai')
+    email  = data.get('email', '')
+    seats  = ','.join(data.get('seats', []))  # VD: 'A1,A2,B3'
+
+    # Nếu đã đăng nhập thì truyền customer_id vào SP, ngược lại truyền chuỗi rỗng
+    session_customer_id = session.get('user_id') or ''
+
     db = get_db_connection()
+    # Dùng cursor thường để gọi CALL với OUT parameter
     cursor = db.cursor()
     try:
-        # 1. Tạo mã Bill duy nhất
-        import time
-        bill_id = f"BILL_{int(time.time())}"
-        
-        # 1.5. Xử lý thông tin khách hàng
-        phone = data.get('phone', '')
-        name = data.get('name', 'Khách vãng lai')
-        email = data.get('email', '')
-
-        # ƯU TIÊN: Nếu user đã đăng nhập thì gắn Bill vào đúng tài khoản session
-        session_customer_id = session.get('user_id')
-        if session_customer_id:
-            customer_id = session_customer_id
-        else:
-            # Khách vãng lai: tra theo số điện thoại
-            cursor.execute("SELECT customer_id FROM Customer WHERE phonenum = %s LIMIT 1", (phone,))
-            existing_customer = cursor.fetchone()
-            if existing_customer:
-                customer_id = existing_customer[0]
-            else:
-                customer_id = f"CUS_{int(time.time())}"
-                sql_customer = "INSERT INTO Customer (customer_id, name, phonenum, email, customer_type) VALUES (%s, %s, %s, %s, 'normal')"
-                cursor.execute(sql_customer, (customer_id, name, phone, email))
-
-        # 2. Chèn hóa đơn với trạng thái 'Đang chờ'
-        sql_bill = "INSERT INTO Bill (bill_id, total, method, status, date, customer_id) VALUES (%s, %s, %s, %s, NOW(), %s)"
-        cursor.execute(sql_bill, (bill_id, data['total_price'], 'QR', 'Đang chờ', customer_id))
-        # 3. Chèn vào bảng Ticket và Ticket_Seat cho TỪNG ghế
-        unit_price = data['total_price'] / len(data['seats'])
-        
-        sql_tic = "INSERT INTO Ticket (tic_id, price, trip_id, bill_id) VALUES (%s, %s, %s, %s)"
-        sql_seat = "INSERT INTO Ticket_Seat (tic_id, seat_id) VALUES (%s, (SELECT seat_id FROM Seat WHERE TRIM(seat_code) = TRIM(%s) LIMIT 1))"
-        
-        for index, seat_code in enumerate(data['seats']):
-            # Tạo tic_id sao cho không bị trùng (dùng time + index)
-            tic_id = f"TIC_{int(time.time())}{index}"
-            
-            # Chèn Ticket (nhớ truyền unit_price vào cho cột price)
-            cursor.execute(sql_tic, (tic_id, unit_price, data['trip_id'], bill_id))
-            
-            # Chèn Ticket_Seat
-            cursor.execute(sql_seat, (tic_id, seat_code))
-
+        # Gọi Stored Procedure sp_LockSeats
+        # SP sẽ tự xử lý: tạo/tra cứu khách hàng, tạo Bill, Ticket, Ticket_Seat
+        cursor.execute(
+            "CALL sp_LockSeats(%s, %s, %s, %s, %s, %s, %s, @bill_id)",
+            (
+                session_customer_id,
+                phone,
+                name,
+                email,
+                data['trip_id'],
+                data['total_price'],
+                seats
+            )
+        )
+        # Lấy giá trị OUT parameter @bill_id
+        cursor.execute("SELECT @bill_id")
+        row = cursor.fetchone()
+        bill_id = row[0] if row else None
         db.commit()
         return jsonify({"success": True, "bill_id": bill_id})
+    except mysql.connector.Error as err:
+        db.rollback()
+        return jsonify({"success": False, "error": err.msg})
     except Exception as e:
         db.rollback()
         return jsonify({"success": False, "error": str(e)})
@@ -496,12 +485,16 @@ def confirm_payment():
     db = get_db_connection()
     cursor = db.cursor()
     try:
-        # Cập nhật trạng thái thành 'Đã thanh toán'
-        sql = "UPDATE Bill SET status = 'Đã thanh toán' WHERE bill_id = %s"
-        cursor.execute(sql, (data['bill_id'],))
+        # Gọi Stored Procedure sp_ConfirmPayment
+        # SP tự kiểm tra hóa đơn tồn tại + đang chờ, rồi UPDATE status
+        cursor.execute("CALL sp_ConfirmPayment(%s)", (data['bill_id'],))
         db.commit()
         return jsonify({"success": True})
+    except mysql.connector.Error as err:
+        db.rollback()
+        return jsonify({"success": False, "error": err.msg})
     except Exception as e:
+        db.rollback()
         return jsonify({"success": False, "error": str(e)})
     finally:
         cursor.close()
