@@ -363,34 +363,6 @@ def lock_seats():
         cursor.close()
         db.close()
 
-# ───── API Lấy lịch sử thiết bị (cũ - giữ lại để tương thích) ─────
-@app.route('/api/lay_lich_su', methods=['POST'])
-def lay_lich_su():
-    data = request.get_json()
-    device_bills = data.get('device_bills', '')
-    
-    if not device_bills.strip():
-        return jsonify({"success": True, "history": []})
-        
-    db = get_db_connection()
-    cursor = db.cursor(dictionary=True)
-    try:
-        cursor.execute("CALL sp_LayLichSuThietBi(%s)", (device_bills,))
-        history = cursor.fetchall()
-        for item in history:
-            if item['booking_date']:
-                item['booking_date'] = item['booking_date'].strftime('%H:%M %d/%m/%Y')
-            if item['dep_time']:
-                item['dep_time'] = item['dep_time'].strftime('%H:%M %d/%m/%Y')
-            if item['arr_time']:
-                item['arr_time'] = item['arr_time'].strftime('%H:%M %d/%m/%Y')
-        return jsonify({"success": True, "history": history})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
-    finally:
-        cursor.close()
-        db.close()
-
 # ───── API Lấy lịch sử theo tài khoản ─────
 @app.route('/api/lay_lich_su_tai_khoan', methods=['GET'])
 def lay_lich_su_tai_khoan():
@@ -451,31 +423,6 @@ def cancel_ticket_tai_khoan():
         cursor.close()
         db.close()
 
-# ───── API Hủy vé thiết bị ─────
-@app.route('/api/cancel_ticket', methods=['POST'])
-def cancel_ticket():
-    data = request.get_json()
-    bill_id = data.get('bill_id', '')
-    
-    if not bill_id:
-        return jsonify({"success": False, "error": "Thiếu mã hóa đơn."})
-        
-    db = get_db_connection()
-    cursor = db.cursor()
-    try:
-        cursor.execute("CALL sp_HuyVeThietBi(%s)", (bill_id,))
-        db.commit()
-        return jsonify({"success": True})
-    except mysql.connector.Error as err:
-        db.rollback()
-        # err.msg chứa thông báo từ SIGNAL SQLSTATE '45000'
-        return jsonify({"success": False, "error": err.msg})
-    except Exception as e:
-        db.rollback()
-        return jsonify({"success": False, "error": str(e)})
-    finally:
-        cursor.close()
-        db.close()
 
 # ───── API Xác nhận thanh toán ─────
 from flask import jsonify
