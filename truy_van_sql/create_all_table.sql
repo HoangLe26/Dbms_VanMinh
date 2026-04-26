@@ -1,4 +1,12 @@
 USE dbms_vanminh;
+DROP TABLE IF EXISTS Ticket_Seat;
+DROP TABLE IF EXISTS Ticket;
+DROP TABLE IF EXISTS Trip;
+DROP TABLE IF EXISTS Bill;
+DROP TABLE IF EXISTS Seat;
+DROP TABLE IF EXISTS Customer;
+DROP TABLE IF EXISTS Bus;
+DROP TABLE IF EXISTS Location;
 -- =======================================================
 -- 1. TẠO CÁC BẢNG ĐỘC LẬP (Không chứa khóa ngoại)
 -- =======================================================
