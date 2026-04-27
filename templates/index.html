@@ -81,6 +81,13 @@
             </ul>
 
             <div class="d-flex align-items-center gap-2">
+                {% if user_name %}
+                <button type="button" class="btn btn-outline-dark rounded-pill px-3 text-nowrap" data-bs-toggle="modal"
+                    data-bs-target="#userInfoModal" onclick="loadThongTin()"
+                    style="font-size: 0.9rem; font-weight: 500; border-width: 2px;">
+                    <i class="bi bi-person-lines-fill"></i> XEM THÔNG TIN
+                </button>
+                {% endif %}
                 <button type="button" class="btn btn-outline-dark rounded-pill px-3 text-nowrap" data-bs-toggle="modal"
                     data-bs-target="#historyModal" onclick="loadHistory()"
                     style="font-size: 0.9rem; font-weight: 500; border-width: 2px;">
@@ -305,6 +312,86 @@
         <a href="tel:0975767676" class="btn-float btn-phone" title="Gọi ngay"><i class="bi bi-telephone-fill"></i></a>
     </div>
 
+    <!-- Modal Thông Tin Cá Nhân -->
+    <div class="modal fade" id="userInfoModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 460px;">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <!-- Header -->
+                <div class="modal-header border-0 pb-0 px-4 pt-4"
+                    style="background: linear-gradient(135deg, #0b8a4f 0%, #0d6e3e 100%);">
+                    <div class="d-flex align-items-center gap-3 w-100">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                            style="width:56px;height:56px;background:rgba(255,255,255,0.15);">
+                            <i class="bi bi-person-fill text-white fs-2"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title fw-bold text-white mb-0" id="infoModalName">Đang tải...</h5>
+                            <span class="badge mt-1" id="infoModalBadge"
+                                style="background:rgba(255,255,255,0.2);color:#fff;font-size:0.78rem;">---</span>
+                        </div>
+                        <button type="button" class="btn-close btn-close-white ms-auto"
+                            data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                </div>
+                <!-- Body -->
+                <div class="modal-body px-4 py-4" style="background:#f9fafb;">
+                    <div id="userInfoLoading" class="text-center py-3 text-muted">
+                        <div class="spinner-border spinner-border-sm text-vm-green me-2" role="status"></div>
+                        Đang tải thông tin...
+                    </div>
+                    <div id="userInfoContent" style="display:none;">
+                        <ul class="list-unstyled mb-0">
+                            <li class="d-flex align-items-start gap-3 py-3 border-bottom">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                    style="width:36px;height:36px;background:#e8f5ee;">
+                                    <i class="bi bi-person-fill text-vm-green"></i>
+                                </div>
+                                <div>
+                                    <div class="small text-muted">Họ và tên</div>
+                                    <div class="fw-semibold text-dark" id="infoName">---</div>
+                                </div>
+                            </li>
+                            <li class="d-flex align-items-start gap-3 py-3 border-bottom">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                    style="width:36px;height:36px;background:#e8f5ee;">
+                                    <i class="bi bi-award-fill text-vm-green"></i>
+                                </div>
+                                <div>
+                                    <div class="small text-muted">Thành viên</div>
+                                    <div class="fw-semibold text-dark" id="infoCusType">---</div>
+                                </div>
+                            </li>
+                            <li class="d-flex align-items-start gap-3 py-3 border-bottom">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                    style="width:36px;height:36px;background:#e8f5ee;">
+                                    <i class="bi bi-telephone-fill text-vm-green"></i>
+                                </div>
+                                <div>
+                                    <div class="small text-muted">Số điện thoại</div>
+                                    <div class="fw-semibold text-dark" id="infoPhone">---</div>
+                                </div>
+                            </li>
+                            <li class="d-flex align-items-start gap-3 py-3">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                    style="width:36px;height:36px;background:#e8f5ee;">
+                                    <i class="bi bi-envelope-fill text-vm-green"></i>
+                                </div>
+                                <div>
+                                    <div class="small text-muted">Email</div>
+                                    <div class="fw-semibold text-dark" id="infoEmail">---</div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div id="userInfoError" style="display:none;" class="alert alert-warning mb-0">
+                        <i class="bi bi-exclamation-circle me-2"></i>
+                        <span id="userInfoErrorMsg"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- History Modal -->
     <div class="modal fade" id="historyModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
@@ -442,6 +529,49 @@
                     loadingHtml.style.display = 'none';
                     contentHtml.style.display = 'block';
                     contentHtml.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>Lỗi kết nối máy chủ! Vui lòng thử lại.</div>';
+                });
+        }
+
+        // Xem thông tin cá nhân
+        function loadThongTin() {
+            const loading = document.getElementById('userInfoLoading');
+            const content = document.getElementById('userInfoContent');
+            const errorBox = document.getElementById('userInfoError');
+
+            loading.style.display = 'block';
+            content.style.display = 'none';
+            errorBox.style.display = 'none';
+
+            fetch('/api/thong_tin_ca_nhan', { method: 'GET' })
+                .then(res => res.json())
+                .then(data => {
+                    loading.style.display = 'none';
+                    if (!data.success) {
+                        errorBox.style.display = 'block';
+                        document.getElementById('userInfoErrorMsg').textContent = data.error || 'Không thể tải thông tin.';
+                        return;
+                    }
+                    const info = data.info;
+
+                    // Điền tên + badge vào header
+                    document.getElementById('infoModalName').textContent = info.name || '---';
+                    const isSpecial = info.customer_type === 'special';
+                    const badge = document.getElementById('infoModalBadge');
+                    badge.textContent = isSpecial ? '⭐ Khách hàng Special' : '● Thành viên thường';
+                    badge.style.background = isSpecial ? 'rgba(255,215,0,0.3)' : 'rgba(255,255,255,0.2)';
+
+                    // Điền các trường
+                    document.getElementById('infoName').textContent     = info.name        || '---';
+                    document.getElementById('infoCusType').textContent  = isSpecial ? 'Special (VIP)' : 'Normal';
+                    document.getElementById('infoPhone').textContent     = info.phonenum    || '---';
+                    document.getElementById('infoEmail').textContent     = info.email       || 'Chưa cập nhật';
+
+                    content.style.display = 'block';
+                })
+                .catch(() => {
+                    loading.style.display = 'none';
+                    errorBox.style.display = 'block';
+                    document.getElementById('userInfoErrorMsg').textContent = 'Lỗi kết nối máy chủ!';
                 });
         }
 

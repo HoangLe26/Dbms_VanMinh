@@ -363,6 +363,28 @@ def lock_seats():
         cursor.close()
         db.close()
 
+# ───── API Thông tin cá nhân ─────
+@app.route('/api/thong_tin_ca_nhan', methods=['GET'])
+def thong_tin_ca_nhan():
+    customer_id = session.get('user_id')
+    if not customer_id:
+        return jsonify({"success": False, "error": "Chưa đăng nhập"})
+
+    db = get_db_connection()
+    cursor = db.cursor(dictionary=True)
+    try:
+        # Gọi Procedure sp_LayThongTinCaNhan (xem truy_van_sql/sp_LayThongTinCaNhan.sql)
+        cursor.execute("CALL sp_LayThongTinCaNhan(%s)", (customer_id,))
+        info = cursor.fetchone()
+        if not info:
+            return jsonify({"success": False, "error": "Không tìm thấy thông tin tài khoản"})
+        return jsonify({"success": True, "info": info})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+    finally:
+        cursor.close()
+        db.close()
+
 # ───── API Lấy lịch sử theo tài khoản ─────
 @app.route('/api/lay_lich_su_tai_khoan', methods=['GET'])
 def lay_lich_su_tai_khoan():
