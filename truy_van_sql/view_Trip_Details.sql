@@ -13,7 +13,7 @@ SELECT
      JOIN Bill bl ON tk.bill_id = bl.bill_id 
      WHERE tk.trip_id = t.trip_id AND bl.status = 'Đã thanh toán') AS sold_seats_str,
     
-    -- Lấy danh sách mã ghế ĐANG GIỮ (Màu vàng - Trong vòng 15 phút)
+    -- Lấy danh sách mã ghế ĐANG GIỮ (Màu vàng - Trong vòng 60 giây)
     (SELECT GROUP_CONCAT(s.seat_code) 
      FROM Ticket_Seat ts 
      JOIN Ticket tk ON ts.tic_id = tk.tic_id 
@@ -21,16 +21,16 @@ SELECT
      JOIN Bill bl ON tk.bill_id = bl.bill_id 
      WHERE tk.trip_id = t.trip_id 
        AND bl.status = 'Đang chờ' 
-       AND bl.date >= NOW() - INTERVAL 15 MINUTE) AS pending_seats_str,
+       AND bl.date >= NOW() - INTERVAL 60 SECOND) AS pending_seats_str,
        
-    -- Đếm tổng số ghế ĐÃ BỊ CHIẾM (Đã thanh toán + Đang giữ trong 15 phút, không tính Hủy)
+    -- Đếm tổng số ghế ĐÃ BỊ CHIẾM (Đã thanh toán + Đang giữ trong 60 giây, không tính Hủy)
     (SELECT COUNT(*) 
      FROM Ticket_Seat ts 
      JOIN Ticket tk ON ts.tic_id = tk.tic_id 
      JOIN Bill bl ON tk.bill_id = bl.bill_id 
      WHERE tk.trip_id = t.trip_id 
        AND bl.status != 'Hủy'
-       AND (bl.status = 'Đã thanh toán' OR (bl.status = 'Đang chờ' AND bl.date >= NOW() - INTERVAL 15 MINUTE))
+       AND (bl.status = 'Đã thanh toán' OR (bl.status = 'Đang chờ' AND bl.date >= NOW() - INTERVAL 60 SECOND))
     ) AS occupied_seats_count
     
 FROM Trip t

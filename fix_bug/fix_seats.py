@@ -9,12 +9,12 @@ stmts = [
     "DROP EVENT IF EXISTS evt_CleanExpiredSeats",
     (
         "CREATE EVENT evt_CleanExpiredSeats "
-        "ON SCHEDULE EVERY 5 MINUTE STARTS NOW() "
+        "ON SCHEDULE EVERY 30 SECOND STARTS NOW() "
         "DO DELETE ts FROM Ticket_Seat ts "
         "INNER JOIN Ticket tk ON ts.tic_id = tk.tic_id "
         "INNER JOIN Bill b ON tk.bill_id = b.bill_id "
         "WHERE b.status = 'Dang cho' "
-        "AND b.date < NOW() - INTERVAL 15 MINUTE"
+        "AND b.date < NOW() - INTERVAL 60 SECOND"
     )
 ]
 
