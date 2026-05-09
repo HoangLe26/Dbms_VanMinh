@@ -1,34 +1,34 @@
-import mysql.connector
+from mysql.connector import pooling
+
+# Pool được khởi tạo 1 lần duy nhất, dùng chung với app.py
+_db_pool = None
+
+def init_pool(pool: pooling.MySQLConnectionPool):
+    """Nhận pool từ app.py để dùng chung, không tạo pool riêng."""
+    global _db_pool
+    _db_pool = pool
 
 def verify_account(username_input, password_input):
     """
-    Hàm kết nối DB và kiểm tra thông tin đăng nhập.
+    Kiểm tra thông tin đăng nhập từ Database.
     - Trả về: (True, thông_tin_khách_hàng) nếu đúng.
     - Trả về: (False, None) nếu sai tài khoản/mật khẩu hoặc lỗi DB.
+    Dùng connection pool (không tạo kết nối mới).
     """
     db = None
     cursor = None
     try:
-        # Kết nối tới database
-        db = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="2609",
-            database="dbms_vanminh"
-        )
-        
-        # Dùng dictionary=True để dữ liệu trả về dạng dict (vd: user['name'])
+        # Lấy kết nối từ pool (không tạo mới)
+        db = _db_pool.get_connection()
         cursor = db.cursor(dictionary=True)
 
-        # tìm user
+        # Tìm user theo username
         query = "SELECT * FROM Customer WHERE username = %s"
         cursor.execute(query, (username_input,))
-        
         user = cursor.fetchone()
 
         # Kiểm tra logic mật khẩu
         if user:
-            # So sánh mật khẩu
             if user['password'] == password_input:
                 return True, user
             else:
@@ -38,12 +38,12 @@ def verify_account(username_input, password_input):
             print("Tên đăng nhập không tồn tại")
             return False, None
 
-    except mysql.connector.Error as err:
-        print(f"Lỗi hệ thống")
+    except Exception as err:
+        print(f"Lỗi hệ thống: {err}")
         return False, None
-        
+
     finally:
-        # giải phóng tài nguyên
+        # Trả kết nối về pool (không đóng hẳn)
         if cursor:
             cursor.close()
         if db and db.is_connected():

@@ -7,15 +7,6 @@ DROP PROCEDURE IF EXISTS sp_LockSeats $$
 -- ===========================================================
 -- Tham số IN:
 --   p_session_customer_id : customer_id từ session (NULL nếu chưa đăng nhập)
---   p_phone               : Số điện thoại khách
---   p_name                : Tên khách
---   p_email               : Email khách (có thể NULL)
---   p_trip_id             : Mã chuyến xe
---   p_total_price         : Tổng tiền của cả đơn
---   p_seats               : Danh sách mã ghế cách nhau bởi dấu phẩy, VD: 'A1,A2,B3'
--- Tham số OUT:
---   p_bill_id             : Mã hóa đơn vừa được tạo
--- ===========================================================
 CREATE PROCEDURE sp_LockSeats(
     IN  p_session_customer_id VARCHAR(50),
     IN  p_phone               VARCHAR(20),
@@ -27,7 +18,7 @@ CREATE PROCEDURE sp_LockSeats(
     OUT p_bill_id             VARCHAR(50)
 )
 BEGIN
-    -- ── Biến nội bộ ──────────────────────────────────────────
+    -- ── Biến nội bộ 
     DECLARE v_customer_id   VARCHAR(50);
     DECLARE v_bill_id       VARCHAR(50);
     DECLARE v_tic_id        VARCHAR(50);
@@ -45,7 +36,7 @@ BEGIN
         RESIGNAL;
     END;
 
-    -- ── BƯỚC 1: Xác định customer_id ─────────────────────────
+    -- ── BƯỚC 1: Xác định customer_id
     IF p_session_customer_id IS NOT NULL AND p_session_customer_id != '' THEN
         -- Người dùng đã đăng nhập → dùng luôn
         SET v_customer_id = p_session_customer_id;
@@ -65,22 +56,22 @@ BEGIN
         END IF;
     END IF;
 
-    -- ── BƯỚC 2: Đếm số ghế để tính đơn giá mỗi vé ───────────
+    -- ── BƯỚC 2: Đếm số ghế để tính đơn giá mỗi vé 
     -- Số ghế = số dấu phẩy + 1  (VD: 'A1,A2,B3' → 3 ghế)
     SET v_seat_count  = 1 + (LENGTH(p_seats) - LENGTH(REPLACE(p_seats, ',', '')));
     SET v_unit_price  = p_total_price / v_seat_count;
 
-    -- ── BƯỚC 3: Tạo mã hóa đơn duy nhất ─────────────────────
+    -- ── BƯỚC 3: Tạo mã hóa đơn duy nhất 
     SET v_bill_id = CONCAT('BILL_', UNIX_TIMESTAMP());
 
-    -- ── BƯỚC 4: Bắt đầu transaction ──────────────────────────
+    -- ── BƯỚC 4: Bắt đầu transaction 
     START TRANSACTION;
 
         -- Chèn hóa đơn với trạng thái 'Đang chờ'
         INSERT INTO Bill (bill_id, total, method, status, date, customer_id)
         VALUES (v_bill_id, p_total_price, 'QR', 'Đang chờ', NOW(), v_customer_id);
 
-        -- ── BƯỚC 5: Vòng lặp tách chuỗi ghế và chèn vé ──────
+        -- ── BƯỚC 5: Vòng lặp tách chuỗi ghế và chèn vé 
         SET v_remaining = p_seats;
         SET v_idx       = 0;
 
@@ -123,9 +114,9 @@ BEGIN
 
     COMMIT;
 
-    -- ── BƯỚC 6: Trả về bill_id cho backend ───────────────────
+    -- ── BƯỚC 6: Trả về bill_id cho backend 
     SET p_bill_id = v_bill_id;
 
 END$$
 
-DELIMITER ;
+DELIMITER;

@@ -1,18 +1,56 @@
 from flask import Flask, render_template, request, session, redirect, url_for, flash
+from mysql.connector import pooling
 import mysql.connector
 import unicodedata
-from back_end.check_login import verify_account
+from back_end.check_login import verify_account, init_pool
 
 app = Flask(__name__, static_folder='assets', static_url_path='/assets')
 app.secret_key = 'vanminh_secret_key_2026'
 
+# ───── CONNECTION POOL (Buffer tối ưu kết nối DB) ─────
+# Thay vì tạo kết nối mới mỗi request, pool giữ sẵn 5 kết nối trong RAM.
+# Khi có request -> lấy kết nối có sẵn -> trả lại pool sau khi xong.
+_db_pool = pooling.MySQLConnectionPool(
+    pool_name="vanminh_pool",
+    pool_size=5,          # Giữ sẵn tối đa 5 kết nối đồng thời
+    pool_reset_session=True,
+    host="localhost",
+    user="root",
+    password="2609",
+    database="dbms_vanminh"
+)
+
 def get_db_connection():
-    return mysql.connector.connect(
-        host="localhost",
-        user="root", 
-        password="2609", 
-        database="dbms_vanminh"
-    )
+    """Lấy một kết nối từ pool (không tạo mới)."""
+    return _db_pool.get_connection()
+
+# Chia sẻ pool với module check_login để dùng chung, không tạo kết nối riêng
+init_pool(_db_pool)
+
+# ───── APP CACHE (Buffer tối ưu dữ liệu ít thay đổi) ─────
+# Danh sách tỉnh hầu như không đổi -> cache lại, không query DB mỗi lần.
+_cache_provinces = None
+
+def get_provinces_cached():
+    """Trả về danh sách tỉnh từ cache. Chỉ query DB lần đầu tiên."""
+    global _cache_provinces
+    if _cache_provinces is None:
+        db = get_db_connection()
+        cursor = db.cursor(dictionary=True)
+        cursor.execute("SELECT DISTINCT province FROM Location ORDER BY province")
+        raw = cursor.fetchall()
+        cursor.close()
+        db.close()
+        # Gọt sạch và lọc trùng
+        seen = set()
+        result = []
+        for p in raw:
+            name = unicodedata.normalize('NFC', p['province']).strip()
+            if name and name not in seen:
+                seen.add(name)
+                result.append({'province': name})
+        _cache_provinces = result
+    return _cache_provinces
 
 # ───── Start Login ─────
 
@@ -147,15 +185,11 @@ def home():
     if not user_name:
         # Lập tức chuyển hướng người dùng sang trang Đăng nhập
         return redirect(url_for('login'))
-    db = get_db_connection()
-    cursor = db.cursor(dictionary=True)
-    cursor.execute("SELECT DISTINCT province FROM Location ORDER BY province")
-    danh_sach_tinh = cursor.fetchall()
-    cursor.close()
-    db.close()
+    # Dùng cache thay vì query DB mỗi lần vào trang chủ
+    danh_sach_tinh = get_provinces_cached()
 
     # sửa lại: trả về username hiển thị lên giao diện
-    return render_template('index.html', provinces=danh_sach_tinh ,user_name=user_name)
+    return render_template('index.html', provinces=danh_sach_tinh, user_name=user_name)
 
 
 # ───── Danh sách chuyến xe ─────
@@ -169,19 +203,8 @@ def trip_list():
     diem_den = unicodedata.normalize('NFC', request.args.get('diem_den', '').strip())
     ngay_di  = request.args.get('ngay_di', '').strip()
 
-    # 1. LẤY VÀ GỌT SẠCH DANH SÁCH TỈNH CHO DROPDOWN
-    cursor.execute("SELECT DISTINCT province FROM Location ORDER BY province")
-    provinces_raw = cursor.fetchall()
-    # Thêm .strip() để gọt sạch khoảng trắng/ký tự ẩn từ Database
-    provinces = [{'province': unicodedata.normalize('NFC', p['province']).strip()} for p in provinces_raw]
-    
-    # Loại bỏ các tỉnh bị trùng lặp sau khi đã gọt sạch khoảng trắng
-    seen = set()
-    clean_provinces = []
-    for p in provinces:
-        if p['province'] not in seen and p['province'] != "":
-            seen.add(p['province'])
-            clean_provinces.append(p)
+    # 1. LẤY DANH SÁCH TỈNH TỪ CACHE (không query DB)
+    clean_provinces = get_provinces_cached()
 
     # Chuyển ngày
     ngay_di_sql = None
