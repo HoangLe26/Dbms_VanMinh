@@ -82,10 +82,10 @@
                     <div class="col-md-3 mb-2 mb-md-0">
                         <div class="time-text">
                             {% if not is_sold_out %}<i class="bi bi-clock text-dark me-1 fs-6"></i>{% endif %}
-                            {{ trip.dep_time.strftime('%H:%M') }} - {{ trip.arr_time.strftime('%H:%M') }}
+                            {{ trip.dep_time.strftime('%H:%M') if trip.dep_time else 'N/A' }} - {{ trip.arr_time.strftime('%H:%M') if trip.arr_time else 'N/A' }}
                         </div>
                         <div class="small mb-1 {{ 'text-muted' if is_sold_out else 'text-dark' }}">
-                            <i class="bi bi-calendar-event me-1"></i> {{ trip.dep_time.strftime('%d/%m/%Y') }}
+                            <i class="bi bi-calendar-event me-1"></i> {{ trip.dep_time.strftime('%d/%m/%Y') if trip.dep_time else 'N/A' }}
                         </div>
                         <small class="{{ 'text-muted' if not is_sold_out }}">Thời gian: {{ (trip.duration // 60) }} giờ
                             {{ (trip.duration % 60) }} phút</small>
@@ -129,7 +129,7 @@
             <div class="seat-selection-pane" data-trip-id="{{ trip.trip_id }}" data-price="{{ trip.price }}"
                 data-dep-province="{{ trip.dep_province }}" data-dep-station="{{ trip.dep_station }}"
                 data-arr-province="{{ trip.arr_province }}" data-arr-station="{{ trip.arr_station }}"
-                data-time="{{ trip.dep_time.strftime('%H:%M - %d/%m/%Y') }}"
+                data-time="{{ trip.dep_time.strftime('%H:%M - %d/%m/%Y') if trip.dep_time else 'N/A' }}"
                 data-type="{{ 'Xe Limousine VIP' if trip.type == 'vip' else 'Xe giường nằm' }} {{ trip.capacity }} chỗ">
                 <div class="row g-4">
                     <div class="col-lg-8 bg-light rounded-3 p-4">

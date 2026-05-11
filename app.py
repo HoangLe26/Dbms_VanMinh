@@ -368,6 +368,9 @@ def trip_list():
     trips = cursor.fetchall()
 
     # 2. GỌT SẠCH DATA CHUYẾN XE VÀ XỬ LÝ GHẾ
+    # Lọc bỏ chuyến xe bị thiếu thời gian (dep_time/arr_time NULL sẽ gây lỗi template)
+    trips = [t for t in trips if t.get('dep_time') and t.get('arr_time')]
+
     for trip in trips:
         # Số ghế trống = Tổng ghế - Số ghế đã bị chiếm
         occupied = trip['occupied_seats_count'] if trip['occupied_seats_count'] else 0
