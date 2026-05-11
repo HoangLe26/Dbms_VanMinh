@@ -1,8 +1,12 @@
-from flask import Flask, render_template, request, session, redirect, url_for, flash
+from flask import Flask, render_template, request, session, redirect, url_for, flash, jsonify
 from mysql.connector import pooling
 import mysql.connector
 import unicodedata
 from back_end.check_login import verify_account, init_pool
+from back_end.admin_queries import get_all_trips, get_all_tickets, get_all_customers, get_dashboard_stats
+from back_end.admin_action_trip import add_trip_action, edit_trip_action, delete_trip_action
+from back_end.admin_action_ticket import cancel_ticket_action
+from back_end.admin_action_customer import edit_customer_action, delete_customer_action
 
 app = Flask(__name__, static_folder='assets', static_url_path='/assets')
 app.secret_key = 'vanminh_secret_key_2026'
@@ -58,6 +62,7 @@ def get_provinces_cached():
 def login():
     if 'user_name' in session:
         return redirect(url_for('home'))
+        
     # xử lí bấm nút login
     if request.method == 'POST':
         username = request.form.get('username')
@@ -67,11 +72,20 @@ def login():
         success, user = verify_account(username, password)
 
         if success:
-            # Lưu thẻ ra vào 
+            # Lưu thông tin chung
             session['user_name'] = user['name']
             session['user_id'] = user['customer_id']
-            # Cấp phép thành công -> về Trang chủ
-            return redirect(url_for('home'))
+            
+            # --- BẮT ĐẦU KIỂM TRA TIỀN TỐ ADMIN ---
+            # Chuyển username về chữ thường và kiểm tra có bắt đầu bằng 'admin' không
+            if username.lower().startswith('admin'):
+                session['role'] = 'admin' # Lưu thêm cờ admin
+                return redirect(url_for('admin')) # Chuyển hướng sang trang quản trị
+            else:
+                session['role'] = 'customer'
+                return redirect(url_for('home')) # Chuyển hướng sang trang chủ khách hàng
+            # --- KẾT THÚC KIỂM TRA ---
+            
         else:
             # Sai mật khẩu -> Báo lỗi và bắt nhập lại
             flash("Tên đăng nhập hoặc mật khẩu không chính xác!")
@@ -81,6 +95,8 @@ def login():
     return render_template('login.html')
 
 # ───── End Login ─────
+
+
 
 ## ───── Start logout ─────
 @app.route('/logout')
@@ -102,6 +118,12 @@ def register():
         email    = request.form.get('email', '').strip()
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '').strip()
+
+        # --- BẮT ĐẦU CHỐT CHẶN BẢO MẬT ---
+        if username.lower().startswith('admin'):
+            flash("Lỗi: Tên đăng nhập không được chứa từ khóa quản trị hệ thống!", "error")
+            return redirect(url_for('register'))
+        # --- KẾT THÚC CHỐT CHẶN ---
 
         # ── Validate bắt buộc ──
         if not fullname:
@@ -173,6 +195,118 @@ def register():
 
     return render_template('register.html')
 # ───── End Register ─────
+
+# ───── Trang Quản trị (Admin) ─────
+@app.route('/admin')
+def admin():
+    # Kiểm tra bảo mật: Bắt buộc phải đăng nhập VÀ có quyền admin
+    if 'user_name' in session and session.get('role') == 'admin':
+        
+        # 1. Lấy các con số thống kê (Doanh thu, Vé, Khách...) từ DB
+        stats_data = get_dashboard_stats()
+        
+        # 2. Lấy danh sách chuyến xe (lấy 5 chuyến mới nhất để hiện ở bảng)
+        all_trips = get_all_trips()
+        trips_data = all_trips[:5] if all_trips else []
+        
+        # 3. Truyền các biến stats và trips vào template
+        return render_template('admin.html', stats=stats_data, trips=trips_data)
+        
+    else:
+        flash("Bạn không có quyền truy cập trang quản trị hệ thống!", "error")
+        return redirect(url_for('login'))
+
+# START TRIP
+@app.route('/admin_trips')
+@app.route('/admin_trips')
+def admin_trips():
+    if 'user_name' in session and session.get('role') == 'admin':
+        from back_end.admin_queries import get_all_trips, get_all_buses, get_all_locations
+        data = get_all_trips()
+        buses_list = get_all_buses()        # Lấy danh sách xe
+        locations_list = get_all_locations() # Lấy danh sách bến
+        return render_template('admin_trips.html', 
+                               trips=data, 
+                               buses=buses_list, 
+                               locations=locations_list)
+    return redirect(url_for('login'))
+@app.route('/add_trip', methods=['POST'])
+def add_trip():
+    if 'user_name' in session and session.get('role') == 'admin':
+        success, message = add_trip_action(request.form)
+        flash(message, "success" if success else "error")
+        return redirect(url_for('admin_trips'))
+    return redirect(url_for('login'))
+
+@app.route('/edit_trip', methods=['POST'])
+def edit_trip():
+    if 'user_name' in session and session.get('role') == 'admin':
+        success, message = edit_trip_action(request.form)
+        flash(message, "success" if success else "error")
+        return redirect(url_for('admin_trips'))
+    return redirect(url_for('login'))
+@app.route('/delete_trip/<trip_id>')
+def delete_trip(trip_id):
+    if 'user_name' in session and session.get('role') == 'admin':
+        success, message = delete_trip_action(trip_id)
+        flash(message, "success" if success else "error")
+        return redirect(url_for('admin_trips'))
+    return redirect(url_for('login'))
+# END TRIP
+
+# START TICKET
+@app.route('/admin_tickets')
+def admin_tickets():
+    if 'user_name' in session and session.get('role') == 'admin':
+        data = get_all_tickets() # Gọi hàm từ file admin_queries
+        return render_template('admin_tickets.html', tickets=data)
+    return redirect(url_for('login'))
+@app.route('/api/ticket_details/<bill_id>')
+def ticket_details_api(bill_id):
+    if 'user_name' in session and session.get('role') == 'admin':
+        from back_end.admin_queries import get_ticket_details
+        details = get_ticket_details(bill_id)
+        if details:
+            return jsonify(details)
+        return jsonify({"error": "Không tìm thấy vé"}), 404
+    return jsonify({"error": "Unauthorized"}), 401
+@app.route('/admin/cancel_ticket/<bill_id>')
+def admin_cancel_ticket(bill_id): # Đổi tên hàm để tránh lỗi Method Not Allowed
+    if 'user_name' in session and session.get('role') == 'admin':
+        success, message = cancel_ticket_action(bill_id)
+        flash(message, "success" if success else "error")
+        return redirect(url_for('admin_tickets'))
+    return redirect(url_for('login'))
+# END TICKET
+
+# START CUSTOMER
+@app.route('/admin_customers')
+def admin_customers():
+    if 'user_name' in session and session.get('role') == 'admin':
+        from back_end.admin_queries import get_all_customers, get_customer_stats
+        customers_list = get_all_customers()
+        stats = get_customer_stats() # Lấy số liệu thật
+        return render_template('admin_customers.html', customers=customers_list, stats=stats)
+    return redirect(url_for('login'))
+@app.route('/edit_customer', methods=['POST'])
+def edit_customer():
+    if 'user_name' in session and session.get('role') == 'admin':
+        success, message = edit_customer_action(request.form)
+        flash(message, "success" if success else "error")
+        return redirect(url_for('admin_customers'))
+    return redirect(url_for('login'))
+
+@app.route('/admin/delete_customer/<customer_id>')
+def admin_delete_customer(customer_id): # Tên hàm phải khớp với url_for trong HTML
+    if 'user_name' in session and session.get('role') == 'admin':
+        success, message = delete_customer_action(customer_id)
+        flash(message, "success" if success else "error")
+        return redirect(url_for('admin_customers'))
+    return redirect(url_for('login'))
+# END CUSTOMER
+#---------------------End Trang quar tri-----------
+
+
 
 # ───── Trang chủ ─────
 @app.route('/')

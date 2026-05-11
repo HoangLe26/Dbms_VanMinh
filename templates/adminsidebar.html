@@ -1,0 +1,69 @@
+<nav id="sidebar">
+    <div class="sidebar-header">
+        <h4>VĂN MINH BUS</h4>
+        <small>Admin Panel</small>
+    </div>
+
+    <ul class="list-unstyled components">
+        <li class="{% if request.path == url_for('admin') %}active{% endif %}">
+            <a href="{{ url_for('admin') }}"><i class="fas fa-chart-line me-2"></i> Tổng quan</a>
+        </li>
+        <li class="{% if request.path == url_for('admin_trips') %}active{% endif %}">
+            <a href="{{ url_for('admin_trips') }}">
+                <i class="fas fa-bus me-2"></i> Quản lý Chuyến xe
+            </a>
+        </li>
+        <li class="{% if request.path == url_for('admin_tickets') %}active{% endif %}">
+            <a href="{{ url_for('admin_tickets') }}">
+                <i class="fas fa-ticket-alt me-2"></i> Quản lý Vé
+            </a>
+        </li>
+        <li class="{% if request.path == url_for('admin_customers') %}active{% endif %}">
+            <a href="{{ url_for('admin_customers') }}">
+                <i class="fas fa-users me-2"></i> Khách hàng
+            </a>
+        </li>
+        <hr style="border-top: 1px solid #4a637c; margin: 15px 20px;">
+        <li>
+            <a href="{{ url_for('logout') }}" class="text-danger"><i class="fas fa-sign-out-alt me-2"></i> Đăng xuất</a>
+        </li>
+    </ul>
+</nav>
+
+<style>
+    :root {
+        --sidebar-width: 260px;
+        --vanminh-green: #27ae60;
+    }
+    #sidebar {
+        width: var(--sidebar-width);
+        height: 100vh;
+        position: fixed;
+        top: 0;
+        left: 0;
+        background: #2c3e50;
+        color: white;
+        z-index: 1000;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    }
+    #sidebar .sidebar-header { 
+        padding: 25px 20px; 
+        background: #1a252f; 
+        text-align: center; 
+        border-bottom: 3px solid var(--vanminh-green);
+    }
+    #sidebar .sidebar-header h4 { margin: 0; font-weight: 700; color: #fff;}
+    #sidebar .sidebar-header small { color: #bdc3c7; letter-spacing: 1px;}
+    
+    #sidebar ul.components { padding: 20px 0; }
+    #sidebar ul li a { 
+        padding: 15px 25px; 
+        display: block; 
+        color: #bdc3c7; 
+        text-decoration: none; 
+        transition: 0.3s;
+        font-weight: 500;
+    }
+    #sidebar ul li a:hover { color: white; background: #34495e; padding-left: 30px; }
+    #sidebar ul li.active > a { color: white; background: var(--vanminh-green); border-left: 5px solid #fff;}
+</style>
