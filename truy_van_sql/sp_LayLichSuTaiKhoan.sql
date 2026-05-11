@@ -1,6 +1,8 @@
-DELIMITER //
+USE dbms_vanminh;
 
-DROP PROCEDURE IF EXISTS sp_LayLichSuTaiKhoan //
+DROP PROCEDURE IF EXISTS sp_LayLichSuTaiKhoan;
+
+DELIMITER //
 
 CREATE PROCEDURE sp_LayLichSuTaiKhoan(
     IN p_customer_id VARCHAR(50)
@@ -13,9 +15,9 @@ BEGIN
         b.date        AS booking_date,
         b.method,
         dep_loc.province  AS dep_province,
-        dep_loc.province  AS dep_station,
+        dep_loc.station   AS dep_station,
         arr_loc.province  AS arr_province,
-        arr_loc.province  AS arr_station,
+        arr_loc.station   AS arr_station,
         t.dep_time,
         t.arr_time,
         GROUP_CONCAT(DISTINCT TRIM(s.seat_code) ORDER BY s.seat_code SEPARATOR ', ') AS seat_list
@@ -28,8 +30,8 @@ BEGIN
     LEFT JOIN Seat        s  ON s.seat_id   = ts.seat_id
     WHERE b.customer_id = p_customer_id
     GROUP BY b.bill_id, b.total, b.status, b.date, b.method,
-             dep_loc.province,
-             arr_loc.province,
+             dep_loc.province, dep_loc.station,
+             arr_loc.province, arr_loc.station,
              t.dep_time, t.arr_time
     ORDER BY b.date DESC;
 END //

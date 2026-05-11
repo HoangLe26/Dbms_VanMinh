@@ -531,11 +531,21 @@ def thong_tin_ca_nhan():
         return jsonify({"success": False, "error": "Chưa đăng nhập"})
 
     db = get_db_connection()
-    cursor = db.cursor(dictionary=True)
+    # callproc() yêu cầu cursor thuọng (không dictionary=True),
+    # sau đó đọc kết quả qua stored_results() với dictionary=True
+    cursor = db.cursor()
     try:
-        # Gọi Procedure sp_LayThongTinCaNhan (xem truy_van_sql/sp_LayThongTinCaNhan.sql)
-        cursor.execute("CALL sp_LayThongTinCaNhan(%s)", (customer_id,))
-        info = cursor.fetchone()
+        # Gọi đúng cách: callproc + stored_results (không dùng execute("CALL..."))
+        cursor.callproc('sp_LayThongTinCaNhan', [customer_id])
+        info = None
+        for result in cursor.stored_results():
+            # Chuyển từ tuple sang dict dựa vào tên cột
+            columns = result.column_names
+            row = result.fetchone()
+            if row:
+                info = dict(zip(columns, row))
+            break  # chỉ cần 1 result set
+
         if not info:
             return jsonify({"success": False, "error": "Không tìm thấy thông tin tài khoản"})
         return jsonify({"success": True, "info": info})
@@ -545,6 +555,8 @@ def thong_tin_ca_nhan():
         cursor.close()
         db.close()
 
+
+
 # ───── API Lấy lịch sử theo tài khoản ─────
 @app.route('/api/lay_lich_su_tai_khoan', methods=['GET'])
 def lay_lich_su_tai_khoan():
@@ -553,18 +565,23 @@ def lay_lich_su_tai_khoan():
         return jsonify({"success": False, "error": "Chưa đăng nhập"})
 
     db = get_db_connection()
-    cursor = db.cursor(dictionary=True)
+    cursor = db.cursor()
     try:
-        # Gọi Procedure sp_LayLichSuTaiKhoan (xem truy_van_sql/sp_LayLichSuTaiKhoan.sql)
-        cursor.execute("CALL sp_LayLichSuTaiKhoan(%s)", (customer_id,))
-        history = cursor.fetchall()
+        # Gọi đúng cách: callproc + stored_results (không dùng execute("CALL..."))
+        cursor.callproc('sp_LayLichSuTaiKhoan', [customer_id])
+        history = []
+        for result in cursor.stored_results():
+            columns = result.column_names
+            rows = result.fetchall()
+            history = [dict(zip(columns, row)) for row in rows]
+            break  # chỉ cần 1 result set
 
         for item in history:
-            if item['booking_date']:
+            if item.get('booking_date'):
                 item['booking_date'] = item['booking_date'].strftime('%H:%M %d/%m/%Y')
-            if item['dep_time']:
+            if item.get('dep_time'):
                 item['dep_time'] = item['dep_time'].strftime('%H:%M %d/%m/%Y')
-            if item['arr_time']:
+            if item.get('arr_time'):
                 item['arr_time'] = item['arr_time'].strftime('%H:%M %d/%m/%Y')
 
         return jsonify({"success": True, "history": history})
