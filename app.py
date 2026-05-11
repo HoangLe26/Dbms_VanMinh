@@ -646,5 +646,180 @@ def confirm_payment():
         cursor.close()
         db.close()
 
+# ───── API Nhượng vé cho người khác ─────
+@app.route('/api/nhuong_ve', methods=['POST'])
+def nhuong_ve():
+    customer_id = session.get('user_id')
+    if not customer_id:
+        return jsonify({"success": False, "error": "Chưa đăng nhập."})
+
+    data         = request.get_json()
+    bill_id      = data.get('bill_id', '').strip()
+    phone_nhan   = data.get('phone_nhan', '').strip()
+    ten_nhan     = data.get('ten_nhan', '').strip()
+
+    if not bill_id or not phone_nhan:
+        return jsonify({"success": False, "error": "Vui lòng nhập đầy đủ mã hóa đơn và số điện thoại người nhận."})
+
+    db = get_db_connection()
+    cursor = db.cursor(dictionary=True)
+    try:
+        # Gọi Transaction sp_NhuongVe
+        # Op.1 (Có điều kiện): INSERT Customer mới nếu người nhận chưa có tài khoản
+        # Op.2: UPDATE Bill đổi customer_id sang người nhận
+        # → Nếu Op.1 thành công nhưng Op.2 FAIL: ROLLBACK xóa Customer vừa tạo
+        cursor.execute(
+            "CALL sp_NhuongVe(%s, %s, %s, %s)",
+            (customer_id, bill_id, phone_nhan, ten_nhan if ten_nhan else None)
+        )
+        result = cursor.fetchone()
+        db.commit()
+        return jsonify({"success": True, "result": result})
+
+    except mysql.connector.Error as err:
+        return jsonify({"success": False, "error": err.msg})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+    finally:
+        cursor.close()
+        db.close()
+
+# ───── Trang Tài khoản ─────
+@app.route('/tai_khoan')
+def tai_khoan():
+    customer_id = session.get('user_id')
+    user_name   = session.get('user_name')
+    if not customer_id:
+        return redirect(url_for('login'))
+
+    db = get_db_connection()
+    cursor = db.cursor()
+    try:
+        # Lấy lịch sử đặt vé + thống kê qua stored procedure
+        cursor.callproc('sp_LayLichSuTaiKhoan', [customer_id])
+        history = []
+        for result in cursor.stored_results():
+            columns = result.column_names
+            rows = result.fetchall()
+            history = [dict(zip(columns, row)) for row in rows]
+            break
+
+        for item in history:
+            if item.get('booking_date'):
+                item['booking_date'] = item['booking_date'].strftime('%H:%M %d/%m/%Y')
+            if item.get('dep_time'):
+                item['dep_time'] = item['dep_time'].strftime('%H:%M %d/%m/%Y')
+
+        # Tính thống kê
+        total_spent  = sum(item.get('total', 0) or 0 for item in history if item.get('status') == 'Đã thanh toán')
+        trips_booked = len(set(item.get('bill_id') for item in history))
+        tickets_bought = sum(len(item.get('seat_list', '').split(',')) if item.get('seat_list') else 0
+                            for item in history if item.get('status') == 'Đã thanh toán')
+
+        # Xác định hạng thành viên
+        if total_spent >= 10_000_000:
+            current_rank = 'Gold'
+            next_target_rank = None
+            amount_needed = 0
+        elif total_spent >= 5_000_000:
+            current_rank = 'Silver'
+            next_target_rank = 'Gold'
+            amount_needed = 10_000_000 - total_spent
+        else:
+            current_rank = 'Normal'
+            next_target_rank = 'Silver'
+            amount_needed = 5_000_000 - total_spent
+
+        stats = {
+            'total_spent': total_spent,
+            'total_trips_booked': trips_booked,
+            'total_tickets_bought': tickets_bought,
+            'current_rank': current_rank,
+            'next_target_rank': next_target_rank,
+            'amount_needed_for_upgrade': amount_needed
+        }
+
+        return render_template('tai_khoan.html',
+                               history=history,
+                               stats=stats,
+                               user_name=user_name)
+    except Exception as e:
+        return render_template('tai_khoan.html',
+                               history=[],
+                               stats=None,
+                               user_name=user_name,
+                               error=str(e))
+    finally:
+        cursor.close()
+        db.close()
+
+
+# ───── Trang Cập nhật thông tin ─────
+@app.route('/cap_nhat_thong_tin')
+def cap_nhat_thong_tin():
+    customer_id = session.get('user_id')
+    user_name   = session.get('user_name')
+    if not customer_id:
+        return redirect(url_for('login'))
+
+    db = get_db_connection()
+    cursor = db.cursor()
+    try:
+        cursor.callproc('sp_LayThongTinCaNhan', [customer_id])
+        info = None
+        for result in cursor.stored_results():
+            columns = result.column_names
+            row = result.fetchone()
+            if row:
+                info = dict(zip(columns, row))
+            break
+        return render_template('cap_nhat_thong_tin.html', info=info, user_name=user_name)
+    except Exception as e:
+        return render_template('cap_nhat_thong_tin.html', info=None, user_name=user_name)
+    finally:
+        cursor.close()
+        db.close()
+
+
+# ───── API Cập nhật thông tin cá nhân ─────
+@app.route('/api/cap_nhat_thong_tin', methods=['POST'])
+def api_cap_nhat_thong_tin():
+    customer_id = session.get('user_id')
+    if not customer_id:
+        return jsonify({"success": False, "error": "Chưa đăng nhập."})
+
+    data      = request.get_json()
+    new_name  = data.get('name',  '').strip() or None
+    new_phone = data.get('phone', '').strip() or None
+    new_email = data.get('email', '').strip() or None
+
+    db = get_db_connection()
+    cursor = db.cursor(dictionary=True)
+    try:
+        # Gọi Stored Procedure sp_CapNhatThongTin
+        # SP tự kiểm tra trùng sđt/email và thực hiện UPDATE
+        cursor.execute(
+            "CALL sp_CapNhatThongTin(%s, %s, %s, %s)",
+            (customer_id, new_name, new_phone, new_email)
+        )
+        result = cursor.fetchone()
+        db.commit()
+
+        # Cập nhật tên trong session nếu người dùng đổi tên
+        if result and result.get('name'):
+            session['user_name'] = result['name']
+
+        return jsonify({"success": True, "info": result})
+    except mysql.connector.Error as err:
+        db.rollback()
+        return jsonify({"success": False, "error": err.msg})
+    except Exception as e:
+        db.rollback()
+        return jsonify({"success": False, "error": str(e)})
+    finally:
+        cursor.close()
+        db.close()
+
+
 if __name__ == '__main__':
     app.run(debug=True)

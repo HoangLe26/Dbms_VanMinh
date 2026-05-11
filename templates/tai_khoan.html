@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thống kê & Lịch sử Tài khoản - Văn Minh</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/assets/CSS/style.css">
+    <style>
+        .stat-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border-left: 4px solid #0b8a4f;
+            transition: transform 0.2s ease-in-out;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        .stat-icon {
+            font-size: 2rem;
+            color: #0b8a4f;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+
+<body style="background-color: #f8f9fa;">
+
+    <nav class="navbar navbar-expand-lg sticky-top shadow-sm py-2"
+        style="background: linear-gradient(to right, #ffd700, #ffb300);">
+        <div class="container d-flex align-items-center">
+            <a class="navbar-brand" href="/">
+                <img src="/assets/Image/logo_header.png" alt="Logo Văn Minh" height="40">
+            </a>
+            <ul class="navbar-nav mx-auto flex-row gap-3 gap-lg-4 align-items-center mb-0" style="list-style: none; padding-left: 0;">
+                <li class="nav-item">
+                    <a class="nav-link fw-bold text-dark px-0" href="/">
+                        <i class="bi bi-house-door-fill text-vm-green me-1"></i>TRANG CHỦ
+                    </a>
+                </li>
+                {% if user_name %}
+                <li class="nav-item">
+                    <a class="nav-link fw-bold text-vm-green px-0" href="/tai_khoan">
+                        <i class="bi bi-person-circle me-1"></i>CHÀO, {{ user_name|upper }}
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link fw-bold text-danger px-0" href="/logout">
+                        <i class="bi bi-box-arrow-right me-1"></i>ĐĂNG XUẤT
+                    </a>
+                </li>
+                {% else %}
+                <li class="nav-item">
+                    <a class="nav-link fw-bold text-dark px-0" href="/login">
+                        <i class="bi bi-person-fill text-vm-green me-1"></i>ĐĂNG NHẬP
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+            <h3 class="fw-bold mb-0" style="color: #0b8a4f;"><i class="bi bi-pie-chart-fill me-2"></i>Thống kê Tài Khoản</h3>
+            <a href="/cap_nhat_thong_tin" class="btn btn-outline-success rounded-pill px-4" style="border-width: 2px;">
+                <i class="bi bi-pencil-square me-2"></i>Cập nhật thông tin cá nhân
+            </a>
+        </div>
+        
+        <!-- Phần hiển thị thống kê -->
+        {% if stats %}
+        <div class="row g-4 mb-5">
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small text-uppercase">Tổng chi tiêu</p>
+                            <h4 class="fw-bold text-dark mb-0">{{ "{:,.0f}".format(stats.total_spent).replace(',', '.') }} đ</h4>
+                        </div>
+                        <i class="bi bi-wallet2 stat-icon"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small text-uppercase">Số chuyến đã đặt</p>
+                            <h4 class="fw-bold text-dark mb-0">{{ stats.total_trips_booked }} Chuyến</h4>
+                        </div>
+                        <i class="bi bi-bus-front stat-icon"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small text-uppercase">Tổng vé đã mua</p>
+                            <h4 class="fw-bold text-dark mb-0">{{ stats.total_tickets_bought }} Vé</h4>
+                        </div>
+                        <i class="bi bi-ticket-detailed stat-icon"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card border-warning">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small text-uppercase">Hạng Thành Viên</p>
+                            <h4 class="fw-bold text-warning mb-0 text-uppercase">{{ stats.current_rank }}</h4>
+                        </div>
+                        <i class="bi bi-award-fill stat-icon text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if stats.amount_needed_for_upgrade > 0 %}
+        <div class="alert alert-warning mb-5 d-flex align-items-center shadow-sm" style="border-radius: 12px;">
+            <i class="bi bi-info-circle-fill fs-3 me-3 text-warning"></i>
+            <div>
+                <strong>Tiến trình lên hạng tiếp theo: {{ stats.next_target_rank }}</strong><br>
+                Bạn chỉ cần chi tiêu thêm <span class="text-danger fw-bold">{{ "{:,.0f}".format(stats.amount_needed_for_upgrade).replace(',', '.') }} đ</span> nữa để thăng hạng!
+            </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="alert alert-secondary">
+            Chưa có thông tin thống kê.
+        </div>
+        {% endif %}
+
+        <hr class="my-5">
+
+        <h3 class="fw-bold mb-4"><i class="bi bi-clock-history me-2 text-vm-green"></i>Lịch sử các chuyến đi</h3>
+        
+        <div class="row g-4">
+            {% if history %}
+                {% for item in history %}
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm rounded-4 overflow-hidden h-100">
+                        <div class="card-header bg-white border-bottom pt-3 pb-2 d-flex justify-content-between align-items-center">
+                            <h6 class="fw-bold mb-0" style="color: #0b8a4f;">{{ item.dep_province }} <i class="bi bi-arrow-right mx-2 text-muted"></i> {{ item.arr_province }}</h6>
+                            {% if item.status == 'Đã thanh toán' %}
+                                <span class="badge bg-success">Đã thanh toán</span>
+                            {% elif item.status == 'Hủy' %}
+                                <span class="badge bg-danger">Đã Hủy</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">Đang chờ thanh toán</span>
+                            {% endif %}
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-sm-7 border-end">
+                                    <div class="d-flex mb-3">
+                                        <i class="bi bi-calendar-event text-secondary me-2"></i>
+                                        <div>
+                                            <span class="small text-muted d-block">Giờ khởi hành</span>
+                                            <strong class="text-dark">{{ item.dep_time }}</strong>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-6">
+                                            <span class="small text-muted d-block"><i class="bi bi-geo-alt me-1"></i>Đón tại</span>
+                                            <strong class="small">{{ item.dep_station }}</strong>
+                                        </div>
+                                        <div class="col-6">
+                                            <span class="small text-muted d-block"><i class="bi bi-geo-alt-fill me-1"></i>Trả tại</span>
+                                            <strong class="small">{{ item.arr_station }}</strong>
+                                        </div>
+                                    </div>
+                                    <div class="pt-2 border-top">
+                                        <span class="small text-muted me-2"><i class="bi bi-ticket-fill text-vm-red me-1"></i>Ghế:</span>
+                                        <strong class="text-primary">{{ item.seat_list if item.seat_list else '---' }}</strong>
+                                    </div>
+                                </div>
+                                <div class="col-sm-5 d-flex flex-column align-items-md-end justify-content-center">
+                                    <span class="text-muted small">Mã Hóa Đơn</span>
+                                    <strong class="font-monospace text-secondary">{{ item.bill_id }}</strong>
+                                    
+                                    <span class="text-muted small mt-2">Ngày đặt</span>
+                                    <span class="small text-dark">{{ item.booking_date }}</span>
+                                    
+                                    <span class="text-muted small mt-2">Tổng tiền</span>
+                                    <h5 class="text-danger fw-bold mb-0">{{ "{:,.0f}".format(item.total).replace(',', '.') }} đ</h5>
+                                    
+                                    {% if item.status == 'Đã thanh toán' %}
+                                    <button class="btn btn-sm btn-outline-danger mt-2 w-100" style="border-radius: 8px;" onclick="cancelTicket('{{ item.bill_id }}')">
+                                        <i class="bi bi-x-circle me-1"></i>Hủy vé
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-primary mt-2 w-100" style="border-radius: 8px;" onclick="nhuongVe('{{ item.bill_id }}')">
+                                        <i class="bi bi-arrow-left-right me-1"></i>Nhượng vé
+                                    </button>
+                                    {% elif item.status != 'Hủy' %}
+                                    <button class="btn btn-sm btn-outline-danger mt-2 w-100" style="border-radius: 8px;" onclick="cancelTicket('{{ item.bill_id }}')">
+                                        <i class="bi bi-x-circle me-1"></i>Hủy vé
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="col-12 text-center py-5 bg-white rounded-4 shadow-sm">
+                    <i class="bi bi-ticket-detailed fs-1 text-secondary mb-3 d-block" style="opacity: 0.5;"></i>
+                    <h5 class="text-muted">Bạn chưa có lịch sử đặt vé nào.</h5>
+                    <a href="/trip_list" class="btn btn-vm-green mt-3 px-4 rounded-pill">ĐẶT VÉ NGAY</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Modal Nhượng Vé -->
+    <div class="modal fade" id="nhuongVeModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 460px;">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="modal-header border-0" style="background: linear-gradient(135deg, #1a56db, #1e40af);">
+                    <div>
+                        <h5 class="modal-title fw-bold text-white mb-0">
+                            <i class="bi bi-arrow-left-right me-2"></i>Nhượng vé cho người khác
+                        </h5>
+                        <small class="text-white-50" id="nhuongVeBillInfo"></small>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div id="nhuongVeAlert" style="display:none;"></div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Số điện thoại người nhận <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-telephone-fill text-primary"></i></span>
+                            <input type="tel" class="form-control" id="inp_phone_nhan"
+                                placeholder="Nhập số điện thoại người nhận...">
+                        </div>
+                        <div class="form-text">Nếu chưa có tài khoản, hệ thống sẽ tự tạo mới.</div>
+                    </div>
+
+                    <div class="mb-4" id="tenNhanWrapper">
+                        <label class="form-label fw-semibold">Họ tên người nhận</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-person-fill text-primary"></i></span>
+                            <input type="text" class="form-control" id="inp_ten_nhan"
+                                placeholder="Nhập họ tên (bắt buộc nếu chưa có tài khoản)...">
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning" style="border-radius: 10px; font-size: 0.88rem;">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <strong>Lưu ý:</strong> Sau khi nhượng, hóa đơn sẽ <strong>biến mất khỏi danh sách của bạn</strong> và thuộc về người nhận. Hành động này <strong>không thể hoàn tác</strong>.
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0 px-4 pb-4">
+                    <button class="btn btn-outline-secondary rounded-3 px-4" data-bs-dismiss="modal">Hủy bỏ</button>
+                    <button class="btn btn-primary rounded-3 px-4 fw-bold" id="btnSubmitNhuong" onclick="submitNhuong()">
+                        <i class="bi bi-send-fill me-2"></i>Xác nhận nhượng
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // ── Hủy vé ──────────────────────────────────────────────────────
+        function cancelTicket(billId) {
+            if (!confirm(`Bạn có chắc chắn muốn hủy Hóa đơn ${billId} không?\nLưu ý: Chỉ hỗ trợ hủy trước giờ khởi hành ít nhất 24 tiếng.`)) return;
+            fetch('/api/cancel_ticket_tai_khoan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bill_id: billId })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) { alert('Hủy vé thành công!'); window.location.reload(); }
+                else alert('Lỗi: ' + data.error);
+            })
+            .catch(() => alert('Lỗi kết nối máy chủ!'));
+        }
+
+        // ── Nhượng vé ─────────────────────────────────────────────────
+        let _nhuongBillId = null;
+
+        function nhuongVe(billId) {
+            _nhuongBillId = billId;
+            // Reset form
+            document.getElementById('inp_phone_nhan').value = '';
+            document.getElementById('inp_ten_nhan').value   = '';
+            document.getElementById('nhuongVeAlert').style.display = 'none';
+            document.getElementById('nhuongVeBillInfo').textContent = 'Mã hóa đơn: ' + billId;
+            document.getElementById('btnSubmitNhuong').disabled = false;
+            document.getElementById('btnSubmitNhuong').innerHTML = '<i class="bi bi-send-fill me-2"></i>Xác nhận nhượng';
+            new bootstrap.Modal(document.getElementById('nhuongVeModal')).show();
+        }
+
+        function submitNhuong() {
+            const phone = document.getElementById('inp_phone_nhan').value.trim();
+            const ten   = document.getElementById('inp_ten_nhan').value.trim();
+            const alertBox = document.getElementById('nhuongVeAlert');
+            const btn = document.getElementById('btnSubmitNhuong');
+
+            if (!phone) {
+                alertBox.style.display = 'block';
+                alertBox.className = 'alert alert-warning rounded-3 mb-3';
+                alertBox.innerHTML = '<i class="bi bi-exclamation-circle me-2"></i>Vui lòng nhập số điện thoại người nhận!';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang xử lý...';
+            alertBox.style.display = 'none';
+
+            fetch('/api/nhuong_ve', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bill_id: _nhuongBillId, phone_nhan: phone, ten_nhan: ten })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    const r = data.result;
+                    alertBox.style.display = 'block';
+                    alertBox.className = 'alert alert-success rounded-3 mb-3';
+                    alertBox.innerHTML = `<i class="bi bi-check-circle-fill me-2"></i><strong>Nhượng thành công!</strong><br>Hóa đơn <strong>${r.bill_id}</strong> đã được chuyển cho <strong>${r.receiver_name}</strong> (${r.receiver_phone}).`;
+                    btn.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>Thành công!';
+                    setTimeout(() => window.location.reload(), 2000);
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-send-fill me-2"></i>Xác nhận nhượng';
+                    alertBox.style.display = 'block';
+                    alertBox.className = 'alert alert-danger rounded-3 mb-3';
+                    alertBox.innerHTML = `<i class="bi bi-x-circle-fill me-2"></i>${data.error}`;
+                }
+            })
+            .catch(() => alert('Lỗi kết nối máy chủ khi thực hiện hủy vé!'));
+        }
+
+
+    </script>
+</body>
+</html>

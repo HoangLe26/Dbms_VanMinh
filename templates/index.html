@@ -82,11 +82,10 @@
 
             <div class="d-flex align-items-center gap-2">
                 {% if user_name %}
-                <button type="button" class="btn btn-outline-dark rounded-pill px-3 text-nowrap" data-bs-toggle="modal"
-                    data-bs-target="#userInfoModal" onclick="loadThongTin()"
+                <a href="/tai_khoan" class="btn btn-outline-dark rounded-pill px-3 text-nowrap"
                     style="font-size: 0.9rem; font-weight: 500; border-width: 2px;">
                     <i class="bi bi-person-lines-fill"></i> XEM THÔNG TIN
-                </button>
+                </a>
                 {% endif %}
                 <button type="button" class="btn btn-outline-dark rounded-pill px-3 text-nowrap" data-bs-toggle="modal"
                     data-bs-target="#historyModal" onclick="loadHistory()"

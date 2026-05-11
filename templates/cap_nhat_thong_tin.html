@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cập nhật thông tin - Văn Minh</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/CSS/style.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f0fdf4 0%, #f8f9fa 60%, #fff8e1 100%);
+            min-height: 100vh;
+        }
+
+        .profile-sidebar {
+            background: linear-gradient(160deg, #0b8a4f 0%, #075c35 100%);
+            border-radius: 20px;
+            padding: 32px 24px;
+            color: white;
+            position: sticky;
+            top: 90px;
+        }
+
+        .avatar-circle {
+            width: 88px;
+            height: 88px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.4rem;
+            margin: 0 auto 16px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .rank-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            background: rgba(255, 215, 0, 0.25);
+            color: #ffd700;
+            border: 1px solid rgba(255, 215, 0, 0.4);
+            margin-top: 6px;
+        }
+
+        .sidebar-info-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.9rem;
+        }
+
+        .sidebar-info-item:last-child { border-bottom: none; }
+
+        .sidebar-info-item .icon-wrap {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .form-card {
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+            overflow: hidden;
+        }
+
+        .form-card-header {
+            background: linear-gradient(90deg, #0b8a4f, #0d9e5c);
+            padding: 22px 28px;
+        }
+
+        .form-section-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: #0b8a4f;
+            margin-bottom: 14px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e8f5ee;
+        }
+
+        .vm-input-group .input-group-text {
+            background: #f0fdf4;
+            border-right: none;
+            color: #0b8a4f;
+            font-size: 1.05rem;
+        }
+
+        .vm-input-group .form-control {
+            border-left: none;
+            background: #f9fafb;
+            transition: background 0.2s;
+        }
+
+        .vm-input-group .form-control:focus {
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(11, 138, 79, 0.12);
+            border-color: #0b8a4f;
+        }
+
+        .vm-input-group .input-group-text,
+        .vm-input-group .form-control {
+            border-color: #dee2e6;
+        }
+
+        .btn-save {
+            background: linear-gradient(90deg, #0b8a4f, #0d9e5c);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 14px 32px;
+            font-weight: 600;
+            font-size: 1rem;
+            letter-spacing: 0.3px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(11, 138, 79, 0.3);
+        }
+
+        .btn-save:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(11, 138, 79, 0.4);
+            color: #fff;
+        }
+
+        .btn-back {
+            border-radius: 12px;
+            padding: 14px 24px;
+            font-weight: 600;
+            border-width: 2px;
+        }
+
+        .tip-box {
+            background: #fffbeb;
+            border: 1px solid #fcd34d;
+            border-radius: 12px;
+            padding: 16px 20px;
+        }
+
+        .alert-vm {
+            border-radius: 12px;
+            font-size: 0.92rem;
+            border: none;
+        }
+
+        /* Animated success check */
+        @keyframes scaleIn {
+            from { transform: scale(0.5); opacity: 0; }
+            to   { transform: scale(1);   opacity: 1; }
+        }
+        .success-icon { animation: scaleIn 0.3s ease; }
+    </style>
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg sticky-top shadow-sm py-2"
+        style="background: linear-gradient(to right, #ffd700, #ffb300);">
+        <div class="container d-flex align-items-center">
+            <a class="navbar-brand" href="/">
+                <img src="/assets/Image/logo_header.png" alt="Logo Văn Minh" height="40">
+            </a>
+            <ul class="navbar-nav mx-auto flex-row gap-3 gap-lg-4 align-items-center mb-0"
+                style="list-style: none; padding-left: 0;">
+                <li class="nav-item">
+                    <a class="nav-link fw-bold text-dark px-0" href="/">
+                        <i class="bi bi-house-door-fill text-vm-green me-1"></i>TRANG CHỦ
+                    </a>
+                </li>
+                {% if user_name %}
+                <li class="nav-item">
+                    <a class="nav-link fw-bold text-vm-green px-0" href="/tai_khoan">
+                        <i class="bi bi-person-circle me-1"></i>CHÀO, {{ user_name|upper }}
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link fw-bold text-danger px-0" href="/logout">
+                        <i class="bi bi-box-arrow-right me-1"></i>ĐĂNG XUẤT
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb" style="font-size: 0.88rem;">
+                <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-vm-green">Trang chủ</a></li>
+                <li class="breadcrumb-item"><a href="/tai_khoan" class="text-decoration-none text-vm-green">Tài khoản</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Cập nhật thông tin</li>
+            </ol>
+        </nav>
+
+        <div class="row g-4">
+
+            <!-- Cột trái: Sidebar thông tin hiện tại -->
+            <div class="col-lg-4">
+                <div class="profile-sidebar">
+                    <div class="text-center mb-4">
+                        <div class="avatar-circle">
+                            <i class="bi bi-person-fill text-white"></i>
+                        </div>
+                        <h5 class="fw-bold mb-1">{{ info.name if info else user_name }}</h5>
+                        {% if info and info.customer_type == 'special' %}
+                        <div class="rank-badge"><i class="bi bi-star-fill"></i> SPECIAL</div>
+                        {% else %}
+                        <div class="rank-badge" style="background:rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); border-color: rgba(255,255,255,0.2);">
+                            <i class="bi bi-circle-fill" style="font-size:0.5rem;"></i> THÀNH VIÊN THƯỜNG
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <p class="text-white-50 mb-3" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px;">Thông tin hiện tại</p>
+
+                    <div class="sidebar-info-item">
+                        <div class="icon-wrap"><i class="bi bi-person-fill"></i></div>
+                        <div>
+                            <div style="font-size: 0.72rem; opacity: 0.6;">Họ và tên</div>
+                            <div class="fw-semibold">{{ info.name if info else '---' }}</div>
+                        </div>
+                    </div>
+
+                    <div class="sidebar-info-item">
+                        <div class="icon-wrap"><i class="bi bi-telephone-fill"></i></div>
+                        <div>
+                            <div style="font-size: 0.72rem; opacity: 0.6;">Số điện thoại</div>
+                            <div class="fw-semibold">{{ info.phonenum if info and info.phonenum else 'Chưa cập nhật' }}</div>
+                        </div>
+                    </div>
+
+                    <div class="sidebar-info-item">
+                        <div class="icon-wrap"><i class="bi bi-envelope-fill"></i></div>
+                        <div>
+                            <div style="font-size: 0.72rem; opacity: 0.6;">Email</div>
+                            <div class="fw-semibold">{{ info.email if info and info.email else 'Chưa cập nhật' }}</div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <a href="/tai_khoan" class="btn btn-outline-light w-100 rounded-3">
+                            <i class="bi bi-arrow-left me-2"></i>Quay về Tổng quan
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cột phải: Form chỉnh sửa -->
+            <div class="col-lg-8">
+                <div class="form-card">
+                    <!-- Header form -->
+                    <div class="form-card-header">
+                        <h4 class="fw-bold text-white mb-1">
+                            <i class="bi bi-pencil-square me-2"></i>Cập nhật thông tin cá nhân
+                        </h4>
+                        <p class="text-white-50 mb-0" style="font-size: 0.88rem;">
+                            Chỉ điền vào trường bạn muốn thay đổi, các trường bỏ trống sẽ giữ nguyên.
+                        </p>
+                    </div>
+
+                    <div class="p-4 p-lg-5">
+
+                        <!-- Vùng thông báo -->
+                        <div id="alertBox" style="display:none;" class="mb-4"></div>
+
+                        <!-- Nhóm: Thông tin cơ bản -->
+                        <p class="form-section-title"><i class="bi bi-person me-1"></i>Thông tin cơ bản</p>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold" for="inp_name">Họ và tên</label>
+                            <div class="input-group vm-input-group">
+                                <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
+                                <input type="text" class="form-control form-control-lg" id="inp_name"
+                                    placeholder="Nhập họ tên mới..."
+                                    value="{{ info.name if info and info.name else '' }}">
+                            </div>
+                        </div>
+
+                        <!-- Nhóm: Liên hệ -->
+                        <p class="form-section-title"><i class="bi bi-headset me-1"></i>Thông tin liên hệ</p>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold" for="inp_phone">Số điện thoại</label>
+                            <div class="input-group vm-input-group">
+                                <span class="input-group-text"><i class="bi bi-telephone-fill"></i></span>
+                                <input type="tel" class="form-control form-control-lg" id="inp_phone"
+                                    placeholder="Nhập số điện thoại mới..."
+                                    value="{{ info.phonenum if info and info.phonenum else '' }}">
+                            </div>
+                            <div class="form-text mt-1"><i class="bi bi-info-circle me-1"></i>Số điện thoại phải chưa được đăng ký bởi tài khoản khác.</div>
+                        </div>
+
+                        <div class="mb-5">
+                            <label class="form-label fw-semibold" for="inp_email">Email</label>
+                            <div class="input-group vm-input-group">
+                                <span class="input-group-text"><i class="bi bi-envelope-fill"></i></span>
+                                <input type="email" class="form-control form-control-lg" id="inp_email"
+                                    placeholder="Nhập email mới..."
+                                    value="{{ info.email if info and info.email else '' }}">
+                            </div>
+                            <div class="form-text mt-1"><i class="bi bi-info-circle me-1"></i>Email phải là địa chỉ hợp lệ và chưa được tài khoản khác sử dụng.</div>
+                        </div>
+
+                        <!-- Hộp gợi ý -->
+                        <div class="tip-box mb-5">
+                            <div class="d-flex gap-3 align-items-start">
+                                <i class="bi bi-lightbulb-fill text-warning fs-5 mt-1 flex-shrink-0"></i>
+                                <div style="font-size: 0.88rem;">
+                                    <strong>Lưu ý an toàn:</strong> Sau khi lưu thành công, tên hiển thị trên thanh menu sẽ được cập nhật ngay lập tức mà không cần đăng nhập lại.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Các nút hành động -->
+                        <div class="d-flex gap-3 flex-wrap">
+                            <button class="btn btn-save flex-grow-1" id="btnSave" onclick="submitCapNhat()">
+                                <i class="bi bi-floppy-fill me-2"></i>Lưu thay đổi
+                            </button>
+                            <a href="/tai_khoan" class="btn btn-outline-secondary btn-back flex-shrink-0">
+                                <i class="bi bi-x-lg me-1"></i>Hủy
+                            </a>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function submitCapNhat() {
+            const name  = document.getElementById('inp_name').value.trim();
+            const phone = document.getElementById('inp_phone').value.trim();
+            const email = document.getElementById('inp_email').value.trim();
+            const alertBox = document.getElementById('alertBox');
+            const btn = document.getElementById('btnSave');
+
+            if (!name && !phone && !email) {
+                showAlert('warning', '<i class="bi bi-exclamation-circle me-2"></i>Vui lòng điền ít nhất một thông tin cần thay đổi.');
+                return;
+            }
+
+            // Trạng thái loading
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Đang lưu...';
+            alertBox.style.display = 'none';
+
+            fetch('/api/cap_nhat_thong_tin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, phone, email })
+            })
+            .then(res => res.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-floppy-fill me-2"></i>Lưu thay đổi';
+
+                if (data.success) {
+                    showAlert('success',
+                        '<span class="success-icon d-inline-block me-2">✅</span>' +
+                        '<strong>Cập nhật thành công!</strong> Thông tin của bạn đã được lưu. Đang tải lại...'
+                    );
+                    // Tải lại trang sau 1.8 giây để hiển thị dữ liệu mới + cập nhật Navbar
+                    setTimeout(() => window.location.reload(), 1800);
+                } else {
+                    showAlert('danger',
+                        `<i class="bi bi-x-circle-fill me-2"></i><strong>Lỗi:</strong> ${data.error}`
+                    );
+                }
+            })
+            .catch(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-floppy-fill me-2"></i>Lưu thay đổi';
+                showAlert('danger', '<i class="bi bi-wifi-off me-2"></i>Lỗi kết nối máy chủ! Vui lòng thử lại.');
+            });
+        }
+
+        function showAlert(type, html) {
+            const alertBox = document.getElementById('alertBox');
+            const colorMap = {
+                success: 'alert-success',
+                danger:  'alert-danger',
+                warning: 'alert-warning'
+            };
+            alertBox.className = `alert ${colorMap[type]} alert-vm`;
+            alertBox.innerHTML = html;
+            alertBox.style.display = 'block';
+            // Cuộn đến alertBox
+            alertBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    </script>
+</body>
+</html>
