@@ -3,7 +3,7 @@ from mysql.connector import pooling
 import mysql.connector
 import unicodedata
 from back_end.check_login import verify_account, init_pool
-from back_end.admin_queries import get_all_trips, get_all_tickets, get_all_customers, get_dashboard_stats
+from back_end.admin_queries import get_all_trips, get_all_tickets, get_all_customers, get_dashboard_stats, get_revenue_by_month, get_top_routes
 from back_end.admin_action_trip import add_trip_action, edit_trip_action, delete_trip_action
 from back_end.admin_action_ticket import cancel_ticket_action
 from back_end.admin_action_customer import edit_customer_action, delete_customer_action
@@ -209,8 +209,16 @@ def admin():
         all_trips = get_all_trips()
         trips_data = all_trips[:5] if all_trips else []
         
-        # 3. Truyền các biến stats và trips vào template
-        return render_template('admin.html', stats=stats_data, trips=trips_data)
+        # 3. Lấy dữ liệu thống kê doanh thu từ 2 View mới
+        revenue_by_month = get_revenue_by_month()
+        top_routes       = get_top_routes()
+        
+        # 4. Truyền tất cả biến vào template
+        return render_template('admin.html',
+                               stats=stats_data,
+                               trips=trips_data,
+                               revenue_by_month=revenue_by_month,
+                               top_routes=top_routes)
         
     else:
         flash("Bạn không có quyền truy cập trang quản trị hệ thống!", "error")

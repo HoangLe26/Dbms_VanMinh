@@ -87,6 +87,94 @@
                 </table>
             </div>
         </div>
+
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <!-- PHẦN MỚI: Thống kê doanh thu chi tiết (Reporting)     -->
+        <!-- Dữ liệu lấy từ 2 View: vw_Revenue_By_Month & vw_Top_Routes -->
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <div class="row g-4 mt-2">
+
+            <!-- Bảng 1: Doanh thu theo tháng -->
+            <div class="col-md-6">
+                <div class="table-container h-100">
+                    <h5 class="fw-bold mb-4">
+                        <i class="fas fa-chart-line me-2 text-primary"></i>Doanh thu theo tháng
+                    </h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Tháng</th>
+                                    <th class="text-end">Doanh thu</th>
+                                    <th class="text-center">Số hóa đơn</th>
+                                    <th class="text-center">Số vé</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in revenue_by_month %}
+                                <tr>
+                                    <td><span class="badge bg-primary">{{ row.thang_hien_thi }}</span></td>
+                                    <td class="text-end fw-bold text-success">{{ "{:,.0f}".format(row.doanh_thu) }}đ</td>
+                                    <td class="text-center">{{ row.so_hoa_don }}</td>
+                                    <td class="text-center">{{ row.so_ve }}</td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted fst-italic">Chưa có dữ liệu doanh thu</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bảng 2: Top 3 tuyến xe bán chạy nhất -->
+            <div class="col-md-6">
+                <div class="table-container h-100">
+                    <h5 class="fw-bold mb-4">
+                        <i class="fas fa-trophy me-2 text-warning"></i>Top 3 tuyến xe bán chạy nhất
+                    </h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Hạng</th>
+                                    <th>Tuyến đường</th>
+                                    <th class="text-center">Số vé</th>
+                                    <th class="text-end">Doanh thu</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for route in top_routes %}
+                                <tr>
+                                    <td>
+                                        {% if loop.index0 == 0 %}
+                                            <span class="badge bg-warning text-dark"><i class="fas fa-crown"></i> #1</span>
+                                        {% elif loop.index0 == 1 %}
+                                            <span class="badge bg-secondary"><i class="fas fa-medal"></i> #2</span>
+                                        {% else %}
+                                            <span class="badge bg-danger"><i class="fas fa-award"></i> #3</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="fw-semibold">{{ route.tuyen_duong }}</td>
+                                    <td class="text-center">{{ route.so_ve_ban }}</td>
+                                    <td class="text-end fw-bold text-success">{{ "{:,.0f}".format(route.doanh_thu) }}đ</td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted fst-italic">Chưa có dữ liệu tuyến xe</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <!-- ═══════════════════════════════════════════════════════ -->
+
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

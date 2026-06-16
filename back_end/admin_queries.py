@@ -181,3 +181,33 @@ def get_all_locations():
     finally:
         cursor.close()
         db.close()
+
+def get_revenue_by_month():
+    """Lấy thống kê doanh thu theo từng tháng từ vw_Revenue_By_Month."""
+    db = get_db_connection()
+    cursor = db.cursor(dictionary=True)
+    try:
+        # Lấy 6 tháng gần nhất để hiển thị lên Dashboard
+        cursor.execute("SELECT * FROM vw_Revenue_By_Month LIMIT 6")
+        return cursor.fetchall()
+    except Exception as e:
+        print(f"Lỗi SQL tại get_revenue_by_month: {e}")
+        return []
+    finally:
+        cursor.close()
+        db.close()
+
+def get_top_routes():
+    """Lấy Top 3 tuyến xe bán chạy nhất từ vw_Top_Routes."""
+    db = get_db_connection()
+    cursor = db.cursor(dictionary=True)
+    try:
+        # Chỉ lấy Top 3
+        cursor.execute("SELECT * FROM vw_Top_Routes LIMIT 3")
+        return cursor.fetchall()
+    except Exception as e:
+        print(f"Lỗi SQL tại get_top_routes: {e}")
+        return []
+    finally:
+        cursor.close()
+        db.close()
